@@ -1,0 +1,88 @@
+<div ng-controller="PlanPropertiesCtrl"  ng-init="setInputLang()">
+  <h4 class="centered control-label" id="planDescription">{{lang.tr('planDescription')}}</h4>
+  <div ng-repeat="l in ::langs">
+    <div class="input-group">
+      <span class="input-group-addon" ng-if="dr[l.value].Dir === lang.direction"><div class="pp-input-addon">{{l.name}}</div></span>
+      <input class="form-control" type="text" name="langPlanDescription" id="langPlanDescription"
+        style="text-align:{{dr[l.value].FltDir}};" ng-model="plan.description[l.value]" placeholder="{{lang.tr('planDescription',l.value)}}">
+      </input>
+      <span class="input-group-addon" ng-if="dr[l.value].Dir !== lang.direction"><div class="pp-input-addon">{{l.name}}</div></span>
+    </div>
+  </div>
+  <div ng-if="enableProperties()">
+    <h4 class="centered control-label" id="planProperties">{{lang.tr('planProperties')}}</h4>
+    <div class="row">
+      <div class="col-xs-12 col-sm-6">
+        <div class="input-group">
+          <span class="input-group-addon"><div class="pp-input-addon">{{lang.tr('planInterest')}}</div></span>
+          <input class="form-control" type="text" name="planInterest" maxlength="{{percentageLength}}"
+            id="planInterest" placeholder="10.00"
+            ng-model="plan.interest" ng-change="plan.interest = validatePercentage(plan.interest)">
+          </input>
+          <span class="input-group-addon">%</span>
+        </div>
+      </div>
+      <div class="col-xs-12 col-sm-6">
+        <div class="input-group">
+          <span class="input-group-addon"><div class="pp-input-addon">{{lang.tr('duration')}}</div></span>
+          <input class="form-control" type="text" name="planDiration" id="planDiration"
+            maxlength="2" placeholder="1 - {{maxPlanDuration}}"
+            ng-model="plan.duration" ng-change="plan.duration = validateDuration(plan.duration)">
+          </input>
+          <span class="input-group-addon">{{lang.tr('months')}}</span>
+        </div>
+      </div>
+    </div> 
+  </div>
+<!-- Calendar - Plan Active Period -->
+  <div ng-if="enableActivePeriod()">
+    <h4 class="centered control-label" id="planIsActive">{{lang.tr('planIsActive')}}</h4>
+    <div class="row" ng-repeat="l in ::langs">
+      <div class="col-xs-12 col-sm-6" ng-if="lang.locale === l.locale">
+        <div ng-show="disableFromDate()" class="input-group">
+          <span class="input-group-addon"><div class="pp-input-addon">{{lang.tr('fromDate')}}</div></span>
+          <input type="text" class="form-control pp-form-control" ng-value="fromDate" disabled></input>
+        </div>
+        <div ng-hide="disableFromDate()" class="input-group">
+          <span class="input-group-addon"><div class="pp-input-addon">{{lang.tr('fromDate')}}</div></span>
+          <div class="input-group date" data-provide="datepicker"
+            data-date-start-date="+{{minFromDate}}d" data-date-language="{{l.locale}}"
+            data-date-format="yyyy-mm-dd" data-date-autoclose="true" data-date-clear-btn="true"
+            data-date-toggle-active="true" data-date-today-highlight="true">
+            <input type="text" class="form-control" style="border-radius:0px;" placeholder="{{lang.tr('chooseTheDate')}}"
+              ng-model="inp" ng-value="fromDate" ng-change="setFromDate(inp)">
+            </input>
+            <div class="input-group-addon"><span class="glyphicon glyphicon-th"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xs-12 col-sm-6" ng-if="lang.locale === l.locale">
+        <div class="input-group">
+          <div class="input-group-btn">
+          <button type="button" class="btn btn-default pp-btn-input dropdown-toggle" data-toggle="dropdown"
+              aria-haspopup="true" aria-expanded="false">{{lang.tr('tillDate')}} <span class="caret"></span></button>
+            <ul class="dropdown-menu">
+              <li><a href="" ng-click="setTillDateInput('date')">{{lang.tr('date')}}</a></li>
+              <li><a href="" ng-click="setTillDateInput('unlimited')">{{lang.tr('unlimited')}}</a></li>
+            </ul>
+          </div>        
+          <input ng-if="tillDateInput === 'init'" class="form-control pp-form-control" type="text" name="tillDate" id="tillDate"
+            placeholder="{{lang.tr('chooseDateUlimited')}}" disabled>
+          </input>
+          <input ng-if="tillDateInput === 'unlimited'" class="form-control pp-form-control" type="text" name="tillDate" id="tillDate"
+            placeholder="{{lang.tr('unlimited')}}" disabled>
+          </input>
+          <div ng-if="tillDateInput === 'date'" class="input-group date" data-provide="datepicker"
+            data-date-start-date="+{{minTillDate}}d" data-date-language="{{l.locale}}"
+            data-date-format="yyyy-mm-dd" data-date-autoclose="true" data-date-clear-btn="true"
+            data-date-toggle-active="true" data-date-today-highlight="true">
+            <input type="text" class="form-control" style="border-radius:0px;" placeholder="{{lang.tr('chooseTheDate')}}"
+              ng-model="inp" ng-value="tillDate" ng-change="setTillDate(inp)">
+            </input>
+            <div class="input-group-addon"><span class="glyphicon glyphicon-th"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

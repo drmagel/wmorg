@@ -1,0 +1,11 @@
+#!/bin/ksh
+
+http_grep='app/bin/www'
+http_run='npm start 2>&1 1>/dev/null &'
+
+is_running=`ps -fu$USER | grep ${http_grep} | grep -v grep`
+
+[[ "x${is_running}" == x ]] && ${http_run}
+
+exit 0
+

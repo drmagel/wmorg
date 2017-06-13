@@ -1,0 +1,56 @@
+<div class="container login-container" ng-controller="setLangCtrl" style="direction:{{lang.direction}}">
+  <div class="login-header"> 
+    <h1><i>{{lang.tr('socialProject')}}</i></h1>
+  </div>
+    
+  <div class="jumbotron login-jumbotron">
+    <div class="input-group">
+<!--        <span class="input-group-addon btn-flag-sm" style="background-image:url('images/{{lang.lang}}-flag-small.jpg');"></span> -->
+      <select class="form-control login-select" ng-model="lang.lang" ng-change="setLang(lang.lang)">
+        <option ng-repeat="l in ::langs"  ng-init="lang.lang" value="{{l.value}}">{{l.name}}</option>
+      </select>
+    </div>
+    <div class="login-wmorg-img">
+      <img src="images/WMOrg-gray.jpg" alt="WWMM.Org"></img>
+    </div>
+    <div id="loginForm">
+      <uib-tabset active="activeJustified" justified="true">
+        <uib-tab class = "login-tab" index="0" heading="{{lang.tr('login')}}">
+          <div ng-controller="LoginCtrl">
+            <form name="loginForm" id="loginForm">
+              <div class="row">
+                <input class="login-input center-block" type="email" id="email" name="email"
+                  ng-change="changed()" ng-model="email" placeholder="{{lang.tr('emailAddress')}}"
+                  required autocomplete="on"></input>
+                <input class="login-input center-block" type="password" id="password" name="password"
+                  ng-hide="showAlert()" ng-change="changed()" ng-model="password" placeholder="{{lang.tr('password')}}"
+                  required autocomplete="off"></input>
+                <uib-alert ng-show="showAlert()" class="alert login-alert" type="danger" role="alert" close="dissmissAlert()">
+                  <span>{{lang.tr(alertMessage())}}</span>                    
+                </uib-alert>
+              </div>
+              <button type="submit" class="btn btn-primary center-block login-button"
+                ng-disabled="disabled()" ng-click="login(email, password)">{{lang.tr('login')}}</button>
+            </form>
+          </div>
+        </uib-tab>
+        <uib-tab class= "login-tab" index="1" heading="{{lang.tr('register')}}">
+          <div ng-controller="EnrollCtrl">
+            <form name="registerForm"  id="registerForm">
+              <div>
+                <input class="login-input center-block" type="email" id="email" name="email"
+                  ng-hide="showAlert()"  ng-change="changed()" ng-model="email" placeholder="{{lang.tr('emailAddress')}}"
+                  required autocomplete="on"></input>
+                <uib-alert ng-show="showAlert()" class="alert login-alert" type="danger" role="alert" close="dissmissAlert()">
+                  <span>{{lang.tr(alertMessage())}}</span>                    
+                </uib-alert>
+              </div>  
+              <button type="submit" class="btn btn-success center-block login-button"
+                ng-disabled="disabled()" ng-click="enroll(email)">{{lang.tr('register')}}</button>
+            </form>
+          </div>
+        </uib-tab>
+        </uib-tabset>
+    </div>
+  </div>
+</div>

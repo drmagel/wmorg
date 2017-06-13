@@ -1,0 +1,187 @@
+# SELINUX
+sestatus
+
+vi /etc/selinux/config --> set disabled. Then reboot.
+
+# Git
+ # Remote
+ git remote add origin https://github.com/drmagel/wmorg.git
+
+ # Commit
+ git commit -a -m <commit message> # skipping the `git add .' step 
+ git commit --amend # re-commit
+
+ # Push and fetch
+ git push -u origin master
+ git push -f origin master
+
+ # Tag
+ git log --pretty=oneline
+ git tag -a <tag> <commit checksum, or part of it>
+ git push origin <tag_name>
+
+ # Aliases (~/.gitconfig file)
+ git config --global alias.alias '! git config --get-regexp ^alias\. | sed -e s/^alias\.//'
+
+ git config --global alias.unstage 'reset HEAD --'
+ git config --global alias.undo 'checkout --'
+ git config --global alias.recommit 'commit --amend'
+ git config --global alias.last 'log -1 HEAD'
+
+ git config --global alias.ls 'log --pretty=format:"%C(yellow)%h%Cred%d\ %Creset%s%Cblue\ [%cn]" --decorate'
+ git config --global alias.lds 'log --pretty=format:"%C(yellow)%h\ %ad%Cred%d\ %Creset%s%Cblue\ [%cn]" --decorate --date=short'
+ git config --global alias.lnc 'log --pretty=format:"%h\ %s\ [%cn]"'
+ git config --global alias.ll 'log --pretty=format:"%C(yellow)%h%Cred%d\ %Creset%s%Cblue\ [%cn]" --decorate --numstat'
+
+
+ # Install
+ git clone https://github.com/drmagel/wmorg.git
+ cd wwmm
+ npm install
+ npm start
+
+# Development
+grunt dev # Continuous make process
+grunt make # One time make process
+
+npm start # Run make and start the server
+
+# Mongo DB
+ # Istalling Mongodb
+ yum install mongodb-org
+
+ yum remove mongodb-org-*
+
+ # Authentication
+ mongo
+ use admin
+ db.createUser({user: 'admin', pwd: '12Admin0-', roles: [{role: 'userAdminAnyDatabase', db: 'admin'}] });
+ exit
+ mongo -u admin -p --authenticationDatabase admin
+ use wwmmorg
+ db.createUser({user: 'wwmm', pwd: '1WWmm0-', roles: [{role: 'readWrite', db: 'wwmmorg'}] });
+ db.createUser({user: 'wwmmo', pwd: '12WWmm00--', roles: [{role: 'dbOwner', db: 'wwmmorg'}] });
+ db.getUsers();
+ db.auth('wwmm','12WWmm0-') # 1 - passed, 0 - failed
+ db.auth('wwmmo','12WWmm00--') # 1 - passed, 0 - failed
+ db.changeUserPassword('wwmm','12WWmm0-');
+ db.changeUserPassword('wwmmo','12WWmm00--');
+
+ # Create collection
+ use wwmmorg
+ db.auth('wwmmo','12WWmm00--');
+ db.createCollection('users');
+
+ # Drop the Data Base
+ use wwmm
+ db.auth('wwmmo','12WWmm00--');
+ db.dropDatabase();
+ db.adminCommand({listDatabases: 1}); # Show the existing data bases
+
+ # Drop the DN user
+ mongo -u admin -p --authenticationDatabase admin
+ use wwmmorg
+ db.dropUser('wwmm');
+
+
+ # Insert the document:
+ mongo -u wwmm -p --authenticationDatabase wwmmorg
+    12WWmm0-
+ use wwmmorg
+ show collections
+ db.getCollection('collection name').find();
+ db.users.find();
+ db.users.insert(data); 
+
+# Nodejs and npm installation:
+curl --silent --location https://rpm.nodesource.com/setup_4.x | bash -
+yum install -y nodejs
+
+# NPM properties - proxy setting
+ File: ./.npmrc
+proxy=http://<username>:<pass>@proxyhost:<port>/
+https-proxy=http://<uname>:<pass>@proxyhost:<port>/
+
+ OR
+npm config set proxy=http://X.X.X.X:80/  
+npm config set https-proxy http://X.X.X.X:80/
+
+
+
+# Install testing environment:
+###npm install -g jasmine-node  karma  karma-jasmine karma-phantomjs-launcher
+
+npm -g install jasmine-node
+npm install -g protractor
+webdriver-manager update
+
+# Start the webdriver-manager:
+webdriver-manager start
+
+#Link to webdriver-manager:
+http://localhost:4444/wd/hub
+
+
+
+# Bower properties - install directory
+ File: ./.bowerrc
+{
+  "directory": "app/bower_components",
+  "interactive": false
+}
+
+# Grant - development tool
+ npm install -g grunt-cli
+ # Then add grunt and its APIs to the package.json.
+ npm install
+
+# Express 
+ # Creating the directory tree
+ express --sessions --css less --hogan app
+
+
+# Add/set the ./node_modules/.bin into $PATH
+set_path(){
+ PWD=`pwd`
+ [[ -d ./node_modules/.bin ]] || return
+ echo $PATH | grep -q '/node_modules/.bin'
+ [[ $? == 0 ]] &&
+  PATH=`echo $PATH | sed "s#$HOME/.*/node_modules/.bin:#${PWD}/node_modules/.bin:#"` ||
+  PATH=${PWD}/node_modules/.bin:$PATH
+ export PATH
+}
+
+
+# Update bootstrap-datepicker:
+directory:
+  /home/dimar/src/node.js/WWMM/wwmm/app/fe/bower_components/bootstrap-datepicker/dist/js
+file:
+  bootstrap-datepicker.min.js
+find:
+  this.picker.css({top:o,right:r,zIndex:j})
+change:
+  from: var r=f-(n+m);
+  to: var r=f-(n+b);this.picker.removeClass("datepicker-orient-left");this.picker.addClass("datepicker-orient-right");
+
+file:
+  bootstrap-datepicker.js
+update:
+      if (this.o.rtl) {
+//        var right = windowWidth - (left + width);
+        var right = windowWidth - (left + calendarWidth);
+        this.picker.removeClass('datepicker-orient-left');
+        this.picker.addClass('datepicker-orient-right');
+        this.picker.css({
+          top: top,
+          right: right,
+          zIndex: zIndex
+        });
+      } else {
+        this.picker.css({
+          top: top,
+          left: left,
+          zIndex: zIndex
+        });
+      }
+
+  

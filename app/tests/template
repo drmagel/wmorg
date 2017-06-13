@@ -1,0 +1,15 @@
+// Testing the configuration file
+describe("Configuration setup", function(){
+  it("", function(next){
+
+    next();
+  });
+  it("", function(next){
+
+    next();
+  });
+  it("", function(next){
+
+    next();
+  });
+});

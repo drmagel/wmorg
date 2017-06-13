@@ -1,0 +1,15 @@
+curl -d '{"lang": "rus"}' -H "Content-Type: application/json"  -H "Auth: setlang" http://127.0.0.1:3000/rest/setLang
+curl -d '{"email": "kuku@wwmm.org", "password": "1234"}' -H "Content-Type: application/json"  -H "Auth: login" http://127.0.0.1:3000/rest/login
+
+curl -d '{"userID": "100001001", "sessID": "<session_id from login>"}' -H "Content-Type: application/json"  -H "Auth: <session_id from login>" http://127.0.0.1:3000/rest/getUser
+
+curl -d '{"email": "kuku@wwmm.org", "password": "1234", "sessID": "<session_id from login>"}' -H "Content-Type: application/json"  -H "Auth: <session_id from login>" login" http://127.0.0.1:3000/rest/validate
+
+
+curl -d '{"userID": 100001001, "filter": {"region":1}}' -H "Content-Type: application/json" http://127.0.0.1:3000/rest/getUser
+
+curl -d '{"email": "dimar@v30.amdocs.com", "lang": "heb"}' -H "Content-Type: application/json"  -H "Auth: enroll" http://127.0.0.1:3000/rest/enroll
+
+
+curl -H 'Auth: caa56902af3de4d9449b283138bdcdfb1543f8629a42dfc7e73d2eb0993588ce' -H 'Content-Type: application/json' -d '{"email": "dimar@v30.amdocs.com", "sessID": "caa56902af3de4d9449b283138bdcdfb1543f8629a42dfc7e73d2eb0993588ce", "password": "Dasdfasdfawe-=0-"}' http://localhost:3000/rest/validate
+

@@ -1,0 +1,17 @@
+<div ng-controller="setLangCtrl" style="direction:{{lang.direction}}">
+<!-- Don't put controller name inside the modal HTML file. Define it into $uibModal.open(){} -->
+
+  <form ng-submit="close()">
+    <div class="modal-header centered">
+      <h3 class="modal-title">{{lang.tr(operModal.title)}}</h3>
+    </div>
+    <div class="modal-body centered">
+      <div class="alert" ng-class="operModal.alert" role="alert">
+        <h4><span class="glyphicon" ng-class="operModal.glyphicon" style="font-size:500%" ></span></h4>
+      </div>
+    </div>
+    <div class="modal-footer wmo-modal-footer centered">
+      <button class="btn btn-primary" type="submit">{{lang.tr('continue')}}</button>
+    </div>
+  </form> 
+</div>

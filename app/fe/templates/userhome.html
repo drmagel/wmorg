@@ -1,0 +1,140 @@
+<style>      
+  body {
+    padding-top: 60px;
+  }
+</style>
+<div class="container" ng-cloak ng-controller="setLangCtrl" style="direction:{{lang.direction}}">
+  <link ng-if="lang.direction === 'rtl'" rel="stylesheet" ng-href="bower_components/bootstrap-rtl/dist/css/bootstrap-rtl.min.css"</link>
+  <div ng-controller="UserHomeCtrl" ng-init="initUserHome()">
+    <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="container" id="uh-navbar-container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#uh-navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand pull-left flip" href="" ng-click="setIncludeURL('loanCollect')">WMOrg</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+
+        <div class="collapse navbar-collapse" id="uh-navbar-collapse">
+<!--
+          <form class="navbar-form navbar-left flip">
+            <select class="btn btn-default" ng-model="lang.lang" ng-change="setLang(lang.lang)">
+              <option ng-repeat="l in ::langs"  ng-init="lang.lang" value="{{l.value}}">{{l.name}}</option>
+            </select> 
+          </form>
+-->
+          <ul class="nav navbar-nav">
+            <li class="dropdown">
+              <a href="" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                <span>{{langsBar()}}</span>
+                <span class="glyphicon glyphicon-globe"></span>
+                <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu" role="menu">
+                <li ng-repeat="l in ::langs"><a href="" ng-click="setLang(l.value)">{{l.name}}</a></li>
+              </ul>
+            </li>
+          </ul>
+<!-- Group Admin -->           
+          <ul class="nav navbar-nav" ng-show="user.userRole.indexOf('groupAdmin') > -1">
+            <li class="dropdown">
+              <a href="" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                <span class="fa fa-group uh-fa-nav"></span>
+                <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu" role="menu">
+                <li class="uh-menu-header"><span>{{lang.tr('groupAdminNav')}}</span></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="">Action</a></li>
+                <li><a href="" ng-click="">Another action</a></li>
+                <li><a href="" ng-click="">Something else here</a></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="">Separated link</a></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="">One more separated link</a></li>
+              </ul>
+            </li>
+          </ul>
+<!-- Business Admin -->          
+          <ul class="nav navbar-nav" ng-show="user.userRole.indexOf('businessAdmin') > -1">
+            <li class="dropdown">
+              <a href="" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                <span class="glyphicon glyphicon-euro"></span>
+                <span class="glyphicon glyphicon-usd"></span>
+                <span class="fa fa-shekel"></span>
+                <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu" role="menu">
+                <li class="uh-menu-header"><span>{{lang.tr('businessAdminNav')}}</span></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="setIncludeURL('createPlan')">{{lang.tr('createPlan')}}</a></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="setIncludeURL('getPlans', 'getActive')">{{lang.tr('activePlans')}}</a></li>
+                <li><a href="" ng-click="setIncludeURL('getPlans', 'getPending')">{{lang.tr('pendingPlans')}}</a></li>
+                <li><a href="" ng-click="setIncludeURL('getPlans', 'getCompleted')">{{lang.tr('completedPlans')}}</a></li>
+                <li><a href="" ng-click="setIncludeURL('getPlans', 'getPermanent')">{{lang.tr('permanentPlans')}}</a></li>
+                <li><a href="" ng-click="setIncludeURL('getPlans', 'getAll')">{{lang.tr('allPlans')}}</a></li>
+              </ul>
+            </li>
+          </ul>
+<!-- Office Admin -->      
+          <ul class="nav navbar-nav" ng-show="user.userRole.indexOf('officeAdmin') > -1">
+            <li class="dropdown">
+              <a href="" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                <span class="fa fa-user-secret uh-fa-nav"></span>
+                <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu" role="menu">
+                <li class="uh-menu-header"><span>{{lang.tr('officeAdminNav')}}</span></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="">Action</a></li>
+                <li><a href="" ng-click="">Another action</a></li>
+                <li><a href="" ng-click="">Something else here</a></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="">Separated link</a></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="">One more separated link</a></li>
+              </ul>
+            </li>
+          </ul>
+          
+<!-- The User menu -->            
+          <ul class="nav navbar-nav navbar-right flip">
+            <li><a href="" ng-click=""><span class="glyphicon glyphicon-envelope"></span></a></li>
+            <li class="dropdown">
+              <a href="" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                {{user.firstName}} {{user.familyName}}
+                <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu" role="menu">
+                <li><a href="" ng-click="logout()">{{lang.tr('logout')}}</a></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="setIncludeURL('userInfo')">{{lang.tr('myTransactions')}}</a></li>
+                <li><a href="" ng-click="setIncludeURL('userInfo')">{{lang.tr('myCorrespondence')}}</a></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="setIncludeURL('userInfo')">{{lang.tr('settings')}}</a></li>
+                <li class="divider"></li>
+                <li><a href="" ng-click="setIncludeURL('userInfo')">{{lang.tr('faq')}}</a></li>
+                <li><a href="" ng-click="setIncludeURL('userInfo')">{{lang.tr('help')}}</a></li>
+                <li><a href="" ng-click="setIncludeURL('userInfo')">{{lang.tr('reportProblem')}}</a></li>
+              </ul>
+            </li>
+            <li><a href="" ng-click="logout()"><span class="glyphicon glyphicon-log-out"></span></a></li>
+          </ul>
+          
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /#uh-navbar-container -->
+    </nav>
+
+      <div class="well well-lg uh-well-container" id="uh-well-container">
+<!--      <div class="jumbotron" id="uh-jumbotron"> -->
+        <div ng-include="userHomeIncludeURL"></div>
+      </div>
+  </div>
+</div>

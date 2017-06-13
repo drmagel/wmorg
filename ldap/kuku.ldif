@@ -1,0 +1,20 @@
+dn: mail=kuku@wwmm.org,ou=Members,dc=wwmm,dc=org
+changetype: delete
+
+##################################################
+
+#dn: mail=kuku@wwmm.org,ou=Members,dc=wwmm,dc=org
+#objectClass: top
+#objectClass: inetOrgPerson
+#mail: kuku@wwmm.org
+#sn: 10000010001
+#cn: Israel
+#userPassword: 1234
+
+dn: cn=kuku@wwmm.org,ou=Members,dc=wwmm,dc=org
+objectClass: top
+objectClass: person
+cn: kuku@wwmm.org
+sn: 10000010001
+userPassword: 1234
+

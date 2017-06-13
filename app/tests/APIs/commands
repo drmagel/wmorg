@@ -1,0 +1,7 @@
+# LDAP
+
+ldapsearch -LLL -h 127.0.0.1 -x 'cn=*' sn
+
+# MangoDB
+db.users.find();
+db.users.remove({});

@@ -1,0 +1,3 @@
+find: this.picker.css({top:o,right:r,zIndex:j})
+change:
+  from: var r=f-(n+m); to: var r=f-(n+b);this.picker.removeClass("datepicker-orient-left");this.picker.addClass("datepicker-orient-right");

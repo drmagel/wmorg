@@ -1,0 +1,79 @@
+<style>
+input[type=checkbox] {
+  transform: scale(3);
+}
+</style>
+
+
+<div class="container uh-in-container" ng-cloak ng-controller="GetPlansCtrl" ng-init="getPlanList()">
+
+  <div ng-if="planEditing === true">
+    <div class="row">
+      <div class="col-sm-12">
+        <h3 class="centered">{{lang.tr('planEditing')}}</h3>
+      </div>
+    </div>
+  
+    <div ng-include="planPropertiesTmpl" ng-cloak></div>
+    
+    </br>
+    <div class="row">
+      <div class="col-xm-12 col-sm-12 col-md-12 col-lg-12">
+        <button class="btn btn-success pull-{{lang.oppositeFloatDir}} wmo-btn-middle" type="submit"
+          ng-disabled="disableEditing" ng-click="doneEditing()">{{lang.tr('edit')}}</button>
+        <button class="btn btn-warning pull-{{lang.floatDir}}" type="button" ng-click="cancelEditing()">{{lang.tr('cancel')}}</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="col-xs-12 centered"><span><h3>{{lang.tr(getPageHeader())}}</h3></span></div>
+    <div class="table table-responsive">
+      <table class="table table-striped table-bordered table-condensed">
+        <thead>
+          <tr>
+            <th rowspan="2" style="width:5%;">{{lang.tr('idID')}}</th>
+            <th rowspan="2" style="width:40%">{{lang.tr('planDescription')}}</th>
+            <th rowspan="2" style="width:10%">{{lang.tr('planInterest')}}</th>
+            <th rowspan="2" style="width:10%;max-width:120px;white-space:pre-line;">{{lang.tr('planDuration')}}</th>
+            <th colspan="2" class="centered">{{lang.tr('planIsActive')}}</th>
+            <th rowspan="2" class="centered" style="width:5%">
+              <span class="glyphicon glyphicon-pencil" style="font-size:200%"></span>            
+            </th>
+            <th rowspan="2" class="centered" style="width:5%" ng-if="showTrashTD()">
+              <span class="glyphicon glyphicon-trash" style="font-size:200%"></span>            
+            </th>
+          </tr>
+          <tr>
+            <th style="width:10%">{{lang.tr('fromDate')}}</th>
+            <th style="width:10%">{{lang.tr('tillDate')}}</th>
+          </tr>
+        </thead>
+        <tbody ng-repeat="p in planList track by p.ind=$index">
+          <tr>
+            <td>{{p.planID}}</td>
+            <td><select class="gp-td-select"><option ng-repeat="l in ::langs track by $index" ng-selected="l.value == lang.lang">{{p.description[l.value]}}</option></select></td>
+            <td>{{p.interest}}</td>
+            <td>{{p.duration}}</td>
+            <td>{{localTime(p.fromDate)|date:dateFormat}}</td>
+            <td>{{(p.tillDate === 'permanent') ? lang.tr('unlimited') : localTime(p.tillDate)|date:dateFormat}}</td>
+            <td class="centered">
+              <button class="btn btn-info" type="button" ng-click="editPlan(p.ind)"><span class="glyphicon glyphicon-pencil"></span></button>
+            </td>
+            <td class="gp-td-checkbox" ng-if="showTrashTD()">
+              <input type="checkbox" ng-model="flag" ng-checked="cleanDelete" ng-click="checkboxToDelete(flag, p.ind)" ng-disabled="disableCheckbox(p.ind)"></input>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+    <div class="row" ng-if="plansToDelete.length > 0">
+      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+        <button class="btn btn-info pull-{{lang.oppositeFloatDir}}" type="button" ng-click="deleteFromSystem()">{{lang.tr('deleteFromSystem')}}</button>
+        <button class="btn btn-warning pull-{{lang.floatDir}}" type="button" ng-click="cleanToDelete()">{{lang.tr('cancel')}}</button>
+      </div>
+    </div>
+
+</div>

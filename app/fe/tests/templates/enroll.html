@@ -1,0 +1,19 @@
+<div ng-controller="EnrollCtrl" class="tests-div" id="EnrollCtrl">
+  <table class="tests-table">
+    <tr>
+      <td class="tests-td">
+        <form ng-submit="enroll(email)" id="enrollForm">
+        <input type="email" ng-model="email" name="email" id="emailInput" placeholder="your.email@mail.com">
+        <input type="submit" id="enroll" value="Next"></input>
+        </select>
+        </form>
+      </td>
+        
+      <td class="tests-td">
+        E-Mail: <span>{{email}}</span><br>
+        Verification Number: <span>{{number}}</span><br>
+        Verification String: <span>{{string}}</span>
+      </td>
+  </tr>
+  </table>
+</div>

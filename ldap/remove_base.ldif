@@ -1,0 +1,10 @@
+dn: cn=Manager,dc=wwmm,dc=org
+changetype: delete
+
+dn: ou=Members,dc=wwmm,dc=org
+changetype: delete
+
+dn: dc=wwmm,dc=org
+changetype: delete
+
+

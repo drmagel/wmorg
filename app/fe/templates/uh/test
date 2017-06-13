@@ -1,0 +1,15 @@
+#!/bin/env node
+
+var dayMilliSeconds = 1000 * 3600 * 24;
+var d = new Date();
+var today = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+var testDate = '2016-10-03';
+testDate = new Date(testDate);
+
+console.log('Test date: '+testDate);
+var period = (testDate.getTime() - today.getTime()) / dayMilliSeconds;
+console.log('Period: '+period);
+console.log('Test: ' + new Date(d.getFullYear(), d.getMonth(), d.getDate() + period));
+
+//console.log(new Date('2016-10-2').getTime()+'; '+new Date('2016-10-3').getTime()+'; '+today);
+//console.log(new Date(d.setTime(today)));

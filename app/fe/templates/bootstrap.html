@@ -1,0 +1,243 @@
+<style>
+  .row {
+    background-color: blue;
+  }
+  .btn-group > .btn-flag-sm {
+    border-radius: 0px!important;
+    height: 28px;
+  }
+  div.carousel-inner {
+    height: 300px;
+  }
+  div.item.active {
+    height: 300px;
+  }
+
+</style>
+
+
+<div ng-controller="Bootstrap">
+  <div id="theCarousel" class="carousel slide" data-ride="carousel" >
+    <ol class="carousel-indicators">
+      <li data_target="#theCarousel" data-slide-to="0" class="active"></li>
+      <li data_target="#theCarousel" data-slide-to="1"></li>
+      <li data_target="#theCarousel" data-slide-to="2"></li>
+    </ol>
+    <div class="carousel-inner">
+      <div class="item active">
+        <!-- <div class="slide1"></div> -->
+        <div class="carousel-caption">
+          <h1>Amazing Background</h1>
+          <p>Thousands of Backgrounds for Free</p>
+          <p><a href="javascript:void()" class="btn btn-default btn-sm">Get Them Now</a></p>
+        </div>
+      </div>
+      <div class="item">
+        <div class="slide2"></div>
+        <div class="carousel-caption">
+          <h1>Thousands if Colors</h1>
+          <p>Every Color you can imagine</p>
+        </div>
+      </div>
+      <div class="item">
+        <div class="slide3"></div>
+        <div class="carousel-caption">
+          <h1>Amazing Ilustraions</h1>
+          <p>And are all Free</p>
+        </div>
+      </div>
+    </div>
+    <a class="right carousel-control" href="" ng-click="carousel('#theCarousel', 'next')"><span class="glyphicon glyphicon-chevron-right"></span></a>
+    <a class="left carousel-control"  href="" ng-click="carousel('#theCarousel', 'prev')"><span class="glyphicon glyphicon-chevron-left"></span></a>
+    
+    
+  </div>
+</div>
+
+<div>
+  <uib-accordion>
+    <uib-accordion-group heading="The First Heading"> 
+      The content for the first heading
+    </uib-accordion-group>
+    <uib-accordion-group heading="The Second Heading"> 
+      The content for the second heading
+    </uib-accordion-group>
+  </uib-accordion>
+</div>
+
+<div class="dropup">
+  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Dropup
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+    <li><a href="#">Action</a></li>
+    <li><a href="#">Another action</a></li>
+    <li><a href="#">Something else here</a></li>
+    <li role="separator" class="divider"></li>
+    <li><a href="#">Separated link</a></li>
+  </ul>
+</div>
+
+<div class="dropdown">
+  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+    Dropdown
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+    <li><a href="#">Action</a></li>
+    <li><a href="#">Another action</a></li>
+    <li><a href="#">Something else here</a></li>
+    <li role="separator" class="divider"></li>
+    <li><a href="#">Separated link</a></li>
+  </ul>
+</div>
+
+<div class="container" ng-controller="setLangCtrl" style="direction:{{lang.direction}}">
+  <nav class="navbar navbar-default navbar-fixed-top">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false"></button>
+      <a class="navbar-brand" href="#"><span class="glyphicon glyphicon-home"></a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li class="dropdown">
+          <a href="" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+            <span class="glyphicon glyphicon-menu-hamburger"></span>
+            <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Loans</a></li>
+            <li><a href="#">Returns</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="#">Reports</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="#">Settings</a></li>
+          </ul>
+        </li>
+      </ul>
+      
+      <form class="navbar-form navbar-left" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search">
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+      </form>
+      <select class="btn btn-default btn-md"  role="button" data-toggle="dropdown" ng-model="lang.lang" ng-change="setLang(lang.lang)">
+        <option class="form-control" ng-repeat="l in ::langs"  ng-init="lang.lang" value="{{l.value}}">{{l.name}}</option>
+      </select>
+      
+      
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="#">Link</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="#">Separated link</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </nav>
+</div><!-- /.container -->
+
+
+<div ng-controller="setLangCtrl" style="direction:{{lang.direction}}" class="container">
+  <select class="form-control" ng-model="lang.lang" ng-change="setLang(lang.lang)">
+    <option ng-repeat="l in ::langs"  ng-init="lang.lang" value="{{l.value}}">{{l.name}}</option>
+  </select> 
+</div>
+
+<div class="container">
+  <div class="row" style="width: 403px; margin: 0 auto;">
+  <div ng-controller="setLangCtrl" style="direction:{{lang.direction}}" class="btn btn-default" style="background-color: blue;">
+    <select class="form-control" ng-model="lang.lang" ng-change="setLang(lang.lang)">
+      <option ng-repeat="l in ::langs"  ng-init="lang.lang" value="{{l.value}}">{{l.name}}</option>
+    </select>
+  </div>
+  </div>
+  <div ng-controller="LoginCtrl">
+      <table  class="login-table">
+        <tr class="login-tr">
+          <td>{{lang.tr('emailAddress')}}:</td><td><input type="email" required autocomplete="on" class="login-input" ng-model="email"></td>
+        </tr>
+        <tr class="login-tr">
+          <td>{{lang.tr('password')}}:  </td><td><input type="password" required autocomplete="off" class="login-input" ng-model="password"></td>
+        </tr>
+        <tr>
+          <td class="login-td-button"><button class="login-button" ng-click="">{{lang.tr('register')}}</button></td>
+          <td class="login-td-button" style="float:{{lang.oppositeFloat}};"><button class="login-button" ng-click="">{{lang.tr('login')}}</button></td>
+        </tr>
+      </table>
+  </div>
+</div>
+
+
+<!--
+<div class="container" ng-controller="setLangCtrl" style="direction:{{lang.direction}}"> 
+ <div class="row">
+    <div>
+      <a href="#!/tests" class="btn btn-default btn-lg" role="button">Test</a>
+    </div>
+    <div class="btn-group btn-group-lg" role="group">
+      <button class="btn btn-default btn-lg btn-flag-sm" role="button"  ng-repeat="l in langs" style="background-image:url('images/{{l.value}}-flag-small.jpg');"></button>
+    <div class="col-lg-2 col-md-2 col-sm-1 col-xs-1"></div>
+    <div class="col-lg-6 col-md-6 col-sm-5 col-xs-10">
+    <table>
+      <tr>
+        <td>
+        <select ng-model="lang.lang" ng-change="setLang(lang.lang)" class="lang-select">
+          <option ng-repeat="l in ::langs"  ng-init="lang.lang" value="{{l.value}}" class="lang-option">{{l.name}}</option>
+        </select>
+        </td>
+        <td class='lang-flag' ng-repeat="l in langs" style="background-image:url('images/{{l.value}}-flag-small.jpg');"></td>
+      </tr>
+    </table>
+    </div>
+    <div class="col-lg-2 col-md-2 col-sm-1 col-xs-1"></div>
+  </div>
+  <div class="lang-container">
+    <div class="lang-button"></div>
+    <div class="lang-choose" ng-hide="choose">
+        <tr ng-repeat="l in langs">
+          <td class='lang-flag' style="background-image:url('images/{{l.value}}-flag-small.jpg');"></td>
+          <td style="font-weight: bold; color: gray;">{{l.name}}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+-->  
+  
+<!--
+  <div class="row">
+    <div class="col-md-3"></div>
+    <div class="col-md-5" ng-controller="LoginCtrl">
+      <table  class="login-table">
+        <tr class="login-tr">
+          <td>{{lang.tr('emailAddress')}}:</td><td><input type="email" required autocomplete="on" class="login-input" ng-model="email"></td>
+        </tr>
+        <tr class="login-tr">
+          <td>{{lang.tr('password')}}:  </td><td><input type="password" required autocomplete="off" class="login-input" ng-model="password"></td>
+        </tr>
+        <tr>
+          <td class="login-td-button"><button class="login-button" ng-click="">{{lang.tr('register')}}</button></td>
+          <td class="login-td-button" style="float:{{lang.oppositeFloat}};"><button class="login-button" ng-click="">{{lang.tr('login')}}</button></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="col-md-3"></div>
+  </div>
+  <div class="login"></div>
+</div>
+-->
+
+
+

@@ -1,0 +1,15 @@
+<div ng-controller="setLangCtrl" class="tests-div" id="setLangCtrl">
+  <table class="tests-table">
+    <tr>
+      <td class="tests-td">
+        <select ng-model="lang.lang" ng-change="setLang(lang.lang)">
+          <option ng-repeat="l in ::langs" ng-init="lang.lang" value="{{l.value}}">{{l.name}}</option>
+        </select>
+      </td>
+      <td class="tests-td">
+        Language: <span>{{lang.lang}}</span><br>
+        Direction: <span>{{lang.direction}}</span>
+      </td>
+  </tr>
+  </table>
+</div>

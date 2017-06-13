@@ -1,0 +1,26 @@
+<div ng-controller="setLangCtrl" style="direction:{{lang.direction}}">
+<!--  <div ng-controller="ModalEnrollCtrl"> !!! Don't put controller name inside the modal HTML file. Define it into $uibModal.open(){} -->
+  <div class="modal-header centered">
+    <h3 class="modal-title">{{lang.tr('enterVerificationStringNumber')}}</h3>
+  </div>
+  <div class="modal-body centered">
+    <input class="enroll-input" type="text" id="verNumber" name="verNumber"
+      ng-model="input.verNumber" placeholder="{{lang.tr('verificationNumber')}}"
+      ng-keyup="verNumberClass = (validateNumber()) ? 'wmo-input-valid' : 'wmo-input-error'"
+      ng-class="verNumberClass">
+    </input>
+    <br>
+    <input class="enroll-input" type="text" id="verString" name="verString"
+      ng-model="input.verString" placeholder="{{lang.tr('verificationString')}}"
+      ng-keyup="verStringClass = (validateString()) ? 'wmo-input-valid' : 'wmo-input-error'"
+      ng-class="verStringClass">
+    </input>
+  </div>
+  <div class="modal-footer wmo-modal-footer" style="direction:{{lang.direction}}">
+    <div class="row">
+      <button class="btn btn-primary pull-{{lang.oppositeFloatDir}}" type="submit" ng-disabled="disabled()" ng-click="register()">{{lang.tr('register')}}</button>
+      <button class="btn btn-warning pull-{{lang.floatDir}}" type="button" ng-click="cancel()">{{lang.tr('cancel')}}</button>
+    </div>
+  </div>
+</div>
+  

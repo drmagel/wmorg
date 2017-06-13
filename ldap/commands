@@ -1,0 +1,29 @@
+# Packages:
+openldap-servers-2.4.40-8.el7.x86_64
+compat-openldap-2.3.43-5.el7.x86_64
+openldap-clients-2.4.40-8.el7.x86_64
+openldap-2.4.40-8.el7.x86_64
+openldap-devel-2.4.40-8.el7.x86_64
+
+# Commands
+ldapadd -x -w wwauthmm -D 'cn=Manager,dc=wwmm,dc=org' -f user.ldif
+ldapsearch -x -D 'cn=Manager,dc=wwmm,dc=org' -w wwauthmm 'mail=kuku@wwmm.org'
+ldappasswd -x -D 'cn=Manager,dc=wwmm,dc=org' -w wwauthmm  -s kukuku 'mail=kuku@wwmm.org,ou=Members,dc=wwmm,dc=org'
+ldapsearch -x -b 'ou=Members,dc=wwmm,dc=org' 'mail=kuku@wwmm.org'
+ldapsearch -LLL -x 'mail=*'
+slappasswd -h {MD5} -s <password>
+
+http://www.zytrax.com/books/ldap/ape/
+
+ldapadd -x -w wwauthmm -D 'cn=Manager,dc=wwmm,dc=org' -f user.ldif
+ldapsearch -LLL -x 'mail=*'
+
+ldapsearch -x -D 'cn=kuku@wwmm.org,ou=Members,dc=wwmm,dc=org' -W -LLL 'cn=*' sn
+ldappasswd -x -D 'cn=kuku@wwmm.org,ou=Members,dc=wwmm,dc=org' -w 1234 -s kukuku 'cn=kuku@wwmm.org,ou=Members,dc=wwmm,dc=org'
+
+# ldapsearch -LLL -h 127.0.0.1 -x 'uid=*' | ldapadd -x -w wwauthmm -D 'cn=Manager,  dc=amdocs ,dc=com' -f -
+ldapsearch -LLL -h 127.0.0.1 -x 'cn=*' sn
+
+# Over SSL:
+ldapsearch -LLL -H ldaps://127.0.0.1 -x 'cn=*' sn
+

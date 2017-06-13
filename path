@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set_path(){
+ PWD=`pwd`; 
+ echo $PATH | grep -q '/node_modules/.bin'
+ [[ $? == 0 ]] &&
+  PATH=`echo $PATH | sed "s#$HOME/.*/node_modules/.bin:#${PWD}/node_modules/.bin:#"` || 
+  PATH=${PWD}/node_modules/.bin:$PATH
+ export PATH
+}
+
+set_path
+
+echo $PATH

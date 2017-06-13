@@ -1,0 +1,123 @@
+var collectionName = 'counters',
+    model = require('models')(collectionName),
+    MongoClient = require('mongodb').MongoClient,
+    mongo = require('config').mongo,
+    DB = {},
+    collection = {};
+
+
+//Test values
+var counters = [{
+  _id: 'userID',
+  seq: 100000000000
+},
+{
+  _id: 'planID',
+  seq: 10000
+},
+{
+  _id: 'appID',
+  seq: 2016000000000
+},
+{
+  _id: 'transID',
+  seq: 2016000000000
+}]
+
+// Connection URI
+var dbURI = 'mongodb://' +
+    mongo.dbuser +
+    ':' +
+    mongo.dbpass +
+    '@' +
+    mongo.host +
+    ':' +
+    mongo.port +
+    '/' + mongo.dbname;
+
+// Helpers
+function getSeq(ID){
+  return counters.filter(function(val){
+    return val._id === ID;
+  })[0].seq;
+}
+
+// Tests. r - result, e - error, d - document, db - database
+describe("Counters model", function() {
+  it('should extend the prototypes', function(next){
+    expect(model.setDB).toEqual(jasmine.any(Function));
+    expect(model.get).toEqual(jasmine.any(Function));
+    next();
+  });
+  it("is there a DB server running", function(next) {
+    MongoClient.connect(dbURI, function(e,db) {
+      expect(e).toBe(null);
+      expect(db).toBeDefined();
+      DB = db;   // Setting the real DB
+      model.setDB(db);
+      DB.collection(collectionName).insertMany(counters,{w:1},function(e,r){
+        expect(e).toBe(null);
+//        console.log(r);
+        next();
+      });
+    });
+  });
+  it('GET userID: should get the next value for userID', function(next){
+    var ID = 'userID';
+    model.get(ID,function(e,r){
+      expect(e).toBe(null);
+      expect(r.value.seq).toEqual(getSeq(ID));
+//      console.log(r.value.seq);
+      next();
+    });
+  });
+  it('GET appID: should get the next value for appID', function(next){
+    var ID = 'appID';
+    model.get(ID,function(e,r){
+      expect(e).toBe(null);
+      expect(r.value.seq).toEqual(getSeq(ID));
+//      console.log(r.value.seq);
+      next();
+    });
+  });
+  it('GET transID: should get the next value for transID', function(next){
+    var ID = 'transID';
+    model.get(ID,function(e,r){
+      expect(e).toBe(null);
+      expect(r.value.seq).toEqual(getSeq(ID));
+//      console.log(r.value.seq);
+      next();
+    });
+  });
+  it('GET planID: should get the next value for planID', function(next){
+    var ID = 'planID';
+    model.get(ID,function(e,r){
+      expect(e).toBe(null);
+      expect(r.value.seq).toEqual(getSeq(ID));
+//      console.log(r.value.seq);
+      next();
+    });
+  });
+  it('TEST: check the incremented values', function(next){
+    DB.collection(collectionName).find({}).toArray(function(e,r){
+        expect(e).toBe(null);
+        console.log(r);
+        next();
+      });
+  });
+  it('closing the DB', function(next){
+    DB.collection(collectionName)
+      .deleteMany({},{w:1},function(){
+        DB.close();
+        next();
+      });
+/*
+     DB.close();
+     next();
+*/
+  });
+//  it('', function(next){
+//
+//    next();
+//  });
+});

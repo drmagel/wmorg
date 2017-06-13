@@ -1,0 +1,21 @@
+<div ng-controller="LoginCtrl" class="tests-div" id="LoginCtrl">
+  <table class="tests-table">
+    <tr>
+      <td class="tests-td">
+        <form ng-submit="login(email, password)" id="loginForm">
+        <input type="email" ng-model="email" name="email" id="emailInput" placeholder="your.email@mail.com">
+        <input type="password" ng-model="password" name="password" id="passwordInput" placeholder="password">
+        <input type="submit" id="login" value="Login"></input>
+        </select>
+        </form>
+      </td>
+        
+      <td class="tests-td">
+        User: <span>{{response.userID}}</span><br>
+        Session: <span>{{response.sessID}}</span><br>
+        Valid Till: <span>{{response.validTill}}</span><br>
+        Result: <span>{{response.result}}</span>
+      </td>
+  </tr>
+  </table>
+</div>

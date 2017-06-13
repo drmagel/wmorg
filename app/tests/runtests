@@ -1,0 +1,31 @@
+#!/bin/env bash
+
+PROGRAM=`echo $0 | sed 's?.*/??'`
+
+usage ()
+{
+  echo "
+ Usage:
+   $PROGRAM <dir_names>
+
+ Example:
+   $PROGRAM .
+   $PROGRAM APIs
+   $PROGRAM *
+"
+  exit 1
+}
+
+[[ $# -lt 1 ]] && usage
+DIRS=$@
+
+for dir in ${DIRS}
+do
+  if [ -d ${dir} ];then
+    for spec in ${dir}/*.spec.js
+    do
+      echo "Testing $spec"
+      jasmine-node $spec
+    done
+  fi
+done

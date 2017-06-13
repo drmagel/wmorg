@@ -1,0 +1,9 @@
+<div class="container-fluid" ng-controller="TestsCtrl">
+  <div class="row"><h1 class="tests-h1">Services and Controllers Test Page</h1><div>
+  <div ng-repeat="test in tests">
+    <h2 class="tests-h2">{{test.name}}</h2>
+    <div class="row tests-row" ng-include="test.template"></div>
+    <hr>
+  </div>
+</div>
+

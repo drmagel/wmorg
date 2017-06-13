@@ -1,0 +1,4 @@
+dn: cn=dimar@amdocs.com,ou=Members,dc=wwmm,dc=org
+changetype: delete
+
+##################################################

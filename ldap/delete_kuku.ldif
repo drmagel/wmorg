@@ -1,0 +1,5 @@
+#dn: cn=kuku@wwmm.org,ou=Members,dc=wwmm,dc=org
+#changetype: delete
+
+dn: cn=kuku@v30.amdocs.com,ou=Members,dc=wwmm,dc=org
+changetype: delete

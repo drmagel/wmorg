@@ -1,0 +1,23 @@
+dn: dc=wwmm,dc=org
+objectClass: dcObject
+objectClass: organization
+o: WWMM.ORG Members
+dc: wwmm
+description: WWMM.ORG authentication system
+
+dn: ou=Members,dc=wwmm,dc=org
+objectClass: top
+objectClass: organizationalUnit
+ou: Members
+
+dn: cn=Manager,dc=wwmm,dc=org
+objectClass: top
+objectClass: organizationalRole
+cn: Manager
+
+############################################
+#dn: ou=People,dc=v30,dc=amdocs,dc=com
+#objectClass: top
+#objectClass: organizationalUnit
+#ou: People
+

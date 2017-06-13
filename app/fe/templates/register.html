@@ -1,0 +1,249 @@
+<div ng-controller="setLangCtrl" style="direction:{{lang.direction}}">
+  <div class="container" ng-controller="CreateUserCtrl">
+    <div class="row">
+      <div class="col-sm-12">
+        <h2 class="centered">{{lang.tr('registrationToWMO')}}</h2>
+      </div>
+    </div>
+    <div class="jumbotron register-jumbotron">
+      <form class="form-horizontal" name="CreateUserForm" id="CreateUserForm">     
+        <div id="passwd" name="passwd" ng-show="show('passwd')">
+          <div class="row">
+            <div class="col-sm-12">
+              <h3 class="centered">{{lang.tr('password')}}</h3>
+            </div>
+          </div>
+          <div class="form-group" style="direction:ltr;">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="emailAddress">{{lang.tr('emailAddress')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" style="text-align:center" type="email" name="emailAddress"
+                id="emailAddress" ng-model="email" disabled="true"></input>
+            </div>
+          </div>
+          <div class="form-group" style="direction:ltr;">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="passWord">{{lang.tr('passWord')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" style="text-align:center" type="password" name="passWord" id="passWord"
+                ng-model="password"
+                ng-keyup="passwdClass = (validatePasswd()) ? 'wmo-input-valid' : 'wmo-input-error'"
+                ng-class="passwdClass">
+              </input>
+              <div class="alert alert-warning" style="text-align:{{lang.floatDir}}" role="alert" ng-show="!!!validatePasswd()">
+                {{lang.tr('passwordRule')}}</br><b>! @ # $ % - = +</b>
+              </div>
+            </div>
+          </div>
+          <div class="form-group" style="direction:ltr;">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="passConfirm">{{lang.tr('passConfirm')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" style="text-align:center" type="password" name="passConfirm"
+                id="passConfirm" ng-model="passConfirm"
+                ng-keyup="disabled() ? confirmClass='wmo-input-error' : confirmClass='wmo-input-valid'"
+                ng-class="confirmClass"></input>
+            </div>
+          </div>
+        </div>
+        
+        <div id="name" name="name" ng-show="show('personalDetails')" ng-init="setCountry()">
+          <div class="row">
+            <div class="col-sm-12">
+              <h3 class="centered">{{lang.tr('personalDetails')}}</h3>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="firstName">{{lang.tr('firstName')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" style="text-align:{{lang.floatDir}}" type="text" name="firstName"
+                id="firstName" ng-model="user.firstName"></input>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="familyName">{{lang.tr('familyName')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" style="text-align:{{lang.floatDir}}" type="text" name="familyName"
+                id="familyName" ng-model="user.familyName"></input>
+            </div>
+          </div>
+          <div class="form-group"> <!--  Country -->
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="country">{{lang.tr('country')}}</label>
+            <div class="col-sm-8">
+              <select class="form-control" style="text-align:{{lang.floatDir}}" name="country" id="country"
+                ng-model="country" ng-change="setCountry(country)"
+                ng-disabled="countries.length === 1">
+                <option ng-repeat="c in ::countries" value="{{c}}" >{{lang.tr(c)}}</option>
+              </select>
+            </div>
+          </div> <!--  End Of Country -->
+      <!-- Dropdown on keypress and then filter the list -->
+
+          <script> 
+            $(document).ready(function(){
+              var id = "#cityInput"
+                , dd = "#cityList"
+                ;
+              $(id).keypress(function(){
+                if($(dd).is(":hidden")){$(id).dropdown("toggle")};                
+              });
+            });
+          </script>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="cityInput">{{lang.tr('nearestCity')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" style="text-align:{{lang.floatDir}}" type="text" name="cityInput" id="cityInput"
+                ng-model="cityInput" data-toggle="dropdown" 
+                placeholder="{{lang.tr('starttTypingAndChooseFromTheList')}}" autocomplete="off"></input>                 
+                <ul class="dropdown-menu register-dropdown-menu-{{lang.floatDir}}" id="cityList">
+                  <li role="menuitem">
+                    <a href="" ng-repeat="r in cityList(cityInput)" ng-click="setCity(r)">{{lang.tr(r)}}</a>
+                  </li>
+                </ul>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="phoneNumber">{{lang.tr('phoneNumber')}}</label>
+            <div class="col-sm-8">
+              <div class="input-group" style="direction:ltr">
+              <span class="input-group-addon">{{countryCode}}</span>
+                <input class="form-control" style="text-align:left" type="text" ng-model="user.phone"
+                  placeholder="{{phoneExample}}" id="phoneNumber"
+                  ng-keyup="phoneNumberClass = (validatePhoneNumber()) ? 'wmo-input-valid' : 'wmo-input-error'"
+                  ng-class="phoneNumberClass"></input>
+              </div>
+                <div class="alert alert-warning" style="text-align:{{lang.floatDir}}" role="alert"
+                  ng-show="!!!validatePhoneNumber()">
+                  {{lang.tr('phoneNumberRule')}}
+                </div>
+            </div>
+          </div>
+        </div> <!-- End Of PersonalDetails -->
+        
+        <div id="bankAccounts" name="bankAccounts" ng-show="show('bankAccounts')">
+          <div class="row">
+            <div class="col-sm-12">
+              <h3 class="centered">{{lang.tr('banksAccounts')}}</h3>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="currency">{{lang.tr('currency')}}</label>
+            <div class="col-sm-9">
+              <input class="form-control" style="text-align:{{lang.floatDir}}" type="text" name="currency"
+                id="currency" value="{{currency}}" ng-disabled="true"></input>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label"
+              style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="banksAccounts">{{lang.tr('banksAccounts')}}</label>
+            <div class="col-sm-9">
+              <div class="table-responsive">
+                <table class="table table-condensed"  ng-show="bankAccounts.length > 0">
+                  <tr class="warning" style="font-weight:bold">
+                    <td>{{lang.tr('bankName')}}</td>
+                    <td>{{lang.tr('bankBranch')}}</td>
+                    <td>{{lang.tr('bankAccount')}}</td>
+                  </tr>
+                  <tr class="active" ng-repeat="acc in bankAccounts track by $index">
+                    <td>{{lang.tr(acc.bank)}}</td>
+                    <td>{{acc.branch}}</td>
+                    <td>{{acc.account}}</td>
+                  </tr>
+                </table>
+                <div>
+                  <button class="btn btn-success" type="button" ng-click="openBankAccountManager('add')"><span class="glyphicon glyphicon-plus"></span></button>
+                  <button class="btn btn-info" type="button" ng-click="openBankAccountManager('edit')" ng-show="bankAccounts.length > 0"><span class="glyphicon glyphicon-pencil"></span></button>
+                </div>
+              </div>
+            </div>
+          </div>       
+        </div> <!--  End Of BankAccounts -->
+        
+        <div id="submit" name="submit" ng-show="show('submit')">
+          <div class="row">
+            <div class="col-sm-12">
+              <h3 class="centered">{{lang.tr('registrationSummary')}}</h3>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="summaryEmail">{{lang.tr('emailAddress')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" type="text" name="summaryEmail"
+                id="summaryEmail" ng-value="email" disabled="true"></input>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="summaryName">{{lang.tr('firstName')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" type="text" name="summaryName"
+                id="summaryName" ng-value="user.firstName + ' ' + user.familyName" disabled="true"></input>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="summaryCountry">{{lang.tr('country')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" type="text" name="summaryCountry"
+                id="summaryCountry" ng-value="lang.tr(country)" disabled="true"></input>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="summaryCity">{{lang.tr('city')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" type="text" name="summaryCity"
+                id="summaryCity" ng-value="lang.tr(user.city || '')" disabled="true"></input>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="summaryCurrency">{{lang.tr('currency')}}</label>
+            <div class="col-sm-8">
+              <input class="form-control" style="text-align:{{lang.floatDir}}" type="text" name="summaryCurrency"
+                id="summaryCurrency" ng-value="currency" ng-disabled="true"></input>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-4 control-label"
+              style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
+              for="banksAccounts">{{lang.tr('banksAccounts')}}</label>
+            <div class="col-sm-8">
+              <div class="table-responsive">
+                <table class="table table-condensed">
+                  <tr class="warning" style="font-weight:bold">
+                    <td>{{lang.tr('bankName')}}</td>
+                    <td>{{lang.tr('bankBranch')}}</td>
+                    <td>{{lang.tr('bankAccount')}}</td>
+                  </tr>
+                  <tr class="active" ng-repeat="acc in bankAccounts track by $index">
+                    <td>{{lang.tr(acc.bank)}}</td>
+                    <td>{{acc.branch}}</td>
+                    <td>{{acc.account}}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div> <!-- End Of submit -->
+        
+      </form>
+      <div class="row">
+        <div class="col-xm-12 col-sm-12 col-md-12 col-lg-12">
+          <button class="btn btn-info pull-{{lang.oppositeFloatDir}}" type="submit" ng-disabled="disabled()" ng-click="next()">{{lang.tr(nextStr)}}</button>
+          <button class="btn btn-warning pull-{{lang.floatDir}}" type="button" ng-click="back()">{{lang.tr(backStr)}}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
