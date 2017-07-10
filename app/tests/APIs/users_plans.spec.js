@@ -9,10 +9,11 @@ ldap.init(ldapClient);
 var session = require('models')('sessions')
   , users = require('models')('users')
   , count = require('models')('counters')
+  , enrolls = require('models')('enrolls')
   , MongoClient = require('mongodb').MongoClient
   , mongo = require('config').mongo
   , DB = {};
-
+  
 var dbURI = 'mongodb://' +
     mongo.dbuser +
     ':' +
@@ -43,7 +44,6 @@ var port = require('config').server.port
 
 
 // Test values
-
 var FE = {
       lang: 'rus',
       email: 'kuku@v30.amdocs.com',
@@ -78,7 +78,7 @@ var FE = {
 
   , GA = {
       lang: 'eng',
-      email: 'globAdmin@v30.amdocs.com',
+      email: 'gaga@v30.amdocs.com',
       password: '1234'
     }
 
@@ -86,7 +86,7 @@ var FE = {
       firstName:  'Global',
       familyName: 'Admin',
       phone: '545433666',
-      email: 'globAdmin@v30.amdocs.com',
+      email: 'gaga@v30.amdocs.com',
       currency: 'ils',
       country: 'israel',
       city: 'kfarsaba',
@@ -113,6 +113,10 @@ var FE = {
 function getTime(num){
   var d = new Date()
   return new Date(d.setMonth(num)).getTime();
+}
+
+function filterPlans(plan, list){
+  return list.filter(function(el){return plan.planID === el.planID}).length > 0;
 }
 
 var d = new Date()
@@ -173,56 +177,119 @@ describe("REST API:", function(){
       users.setDB(DB);
       session.setDB(DB);
       count.setDB(DB);
+      enrolls.setDB(DB);
       next();
     });
   });
-  it("ENROLL: check the e-mail and respond with strings", function(next){
+
+  it("ENROLL: check the non-existent e-mail and respond with false", function(next){
     post.path = '/rest/enroll';
     post.headers['Auth'] = 'enroll';   
-    var json = {'email': FE.email, 'lang': FE.lang}
+    var json = {'operand': 'checkEmail',
+                'email': "kukuNonExistent@v30.amdocs.com",
+                'lang': FE.lang}
       , req = request(post, function(res){
 //console.log(res);
-      expect(res.result).toBe(true);
-      expect(Number(res.number)).toEqual(jasmine.any(Number));
-      expect(res.string).toEqual(jasmine.any(String));
-      expect(res.email).toEqual(FE.email);
-      next();
-    });
+          expect(res.result).toBe(false);
+          expect(res.reason).toMatch(/non_existent_email/);
+          next();
+        });
     req.write(JSON.stringify(json));
     req.end();
+  });
+  it("ENROLL: check the e-mail and respond with string and number", function(next){
+    post.path = '/rest/enroll?operand=checkEmail';
+    post.headers['Auth'] = 'enroll';   
+    var json = {'email': FE.email,
+                'lang': FE.lang
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(Number(res.number)).toEqual(jasmine.any(Number));
+          expect(res.string).toEqual(jasmine.any(String));
+          expect(res.email).toEqual(FE.email);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("REASSERT: get verification string and number", function(next){
+    post.path = '/rest/enroll?operand=reassert';
+    post.headers['Auth'] = 'enroll';  
+    enrolls.bring(FE.email, function(e,r){
+      expect(e).toBe(null);
+//console.log(r);
+      expect(r).not.toBe(null);
+      FE.string = r.string;
+      FE.number = r.number;
+      var json = {'email': FE.email,
+                  'number': FE.number,
+                  'string': FE.string
+                 }
+      , req = request(post, function(res){  
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+      req.write(JSON.stringify(json));
+      req.end();
+    });
   });
   it("createUser: Create new user Kimi Put", function(next){
     post.path = '/rest/createUser';
     post.headers['Auth'] = 'createuser';   
     var json = {'email': FE.email,
+                'number': FE.number,
+                'string': FE.string,
                 'password': FE.password,
                 'user': KimiPut
                }
       , req = request(post, function(res){
 //console.log(res);
-      expect(res.result).toBe(true);
-      expect(res.sessID).not.toBe(null);
-      expect(res.userID).not.toBe(null);
-      FE.userID = res.userID;
-      FE.sessID = res.sessID;
-      next();
-    });
+          expect(res.result).toBe(true);
+          expect(res.sessID).not.toBe(null);
+          expect(res.userID).not.toBe(null);
+          FE.userID = res.userID;
+          FE.sessID = res.sessID;
+          next();
+        });
     req.write(JSON.stringify(json));
     req.end();
   });
   it("ENROLL: check the existing e-mail and respond with false", function(next){
     post.path = '/rest/enroll';
     post.headers['Auth'] = 'enroll';   
-    var json = {'email': FE.email, 'lang': FE.lang}
+    var json = {'operand': 'checkEmail',
+                'email': FE.email,
+                'lang': FE.lang}
       , req = request(post, function(res){
 //console.log(res);
-      expect(res.result).toBe(false);
-      expect(res.email).toEqual(FE.email);
-      expect(res.reason).toMatch(/already_exists/);
-      expect(res.userStatus).not.toBe(null)
-      expect(Number(res.groupAdminUserID)).toEqual(jasmine.any(Number));
-      next();
-    });
+          expect(res.result).toBe(false);
+          expect(res.email).toEqual(FE.email);
+          expect(res.reason).toMatch(/already_exists/);
+          expect(res.userStatus).not.toBe(null)
+          expect(Number(res.groupAdminUserID)).toEqual(jasmine.any(Number));
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+    it("ENROLL: check the existing phone number and respond with false", function(next){
+    post.path = '/rest/enroll';
+    post.headers['Auth'] = 'enroll';   
+    var json = {'operand': 'checkPhone',
+                'phone': KimiPut.phone,
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(false);
+          expect(res.phone).toEqual(KimiPut.phone);
+          expect(res.reason).toMatch(/already_exists/);
+          expect(res.userStatus).not.toBe(null)
+          expect(Number(res.groupAdminUserID)).toEqual(jasmine.any(Number));
+          next();
+        });
     req.write(JSON.stringify(json));
     req.end();
   });
@@ -232,12 +299,12 @@ describe("REST API:", function(){
     var json = {'sessID': FE.sessID}
       , req = request(post, function(res){
 //console.log(res);
-      expect(res.result).toBe(true);
-      FE.user = {};
-      FE.userID = 0;
-      FE.sessID = '';
-      next();
-    });
+          expect(res.result).toBe(true);
+          FE.user = {};
+          FE.userID = 0;
+          FE.sessID = '';
+          next();
+        });
     req.write(JSON.stringify(json));
     req.end();
   });
@@ -249,11 +316,11 @@ describe("REST API:", function(){
                }
       , req = request(post, function(res){
 //console.log(res);
-      expect(res.result).toBe(true);
-      FE.userID = res.userID;
-      FE.sessID = res.sessID;
-      next();
-    });
+          expect(res.result).toBe(true);
+          FE.userID = res.userID;
+          FE.sessID = res.sessID;
+          next();
+        });
     req.write(JSON.stringify(json));
     req.end();
   });
@@ -265,10 +332,10 @@ describe("REST API:", function(){
                }
       , req = request(post, function(res){
 //console.log(res);
-      expect(res.user).not.toBe(null);
-      FE.user = res.user;
-      next();
-    });
+          expect(res.user).not.toBe(null);
+          FE.user = res.user;
+          next();
+        });
     req.write(JSON.stringify(json));
     req.end();
   });
@@ -281,15 +348,14 @@ describe("REST API:", function(){
                }
       , req = request(post, function(res){
 //console.log(res);
-      expect(res.result).toBe(true);
-      expect(res.userID).toEqual(FE.userID);
-      expect(res.sessID).toEqual(FE.sessID);
-      next();
-    });
+          expect(res.result).toBe(true);
+          expect(res.userID).toEqual(FE.userID);
+          expect(res.sessID).toEqual(FE.sessID);
+          next();
+        });
     req.write(JSON.stringify(json));
     req.end();
   });
-
 
 
 // operatePlan - session and user permission validation
@@ -379,28 +445,52 @@ describe("REST API:", function(){
     req.end();
   });
 
+
 // User Role
+  it("ENROLL: check the e-mail and respond with strings", function(next){
+    post.path = '/rest/enroll';
+    post.headers['Auth'] = 'enroll';   
+    var json = {'operand': 'checkEmail',
+                'email': GA.email,
+                'lang': GA.lang
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          enrolls.bring(GA.email, function(e,r){
+            expect(e).toBe(null);
+//console.log(r);
+            expect(r).not.toBe(null);
+            GA.string = r.string;
+            GA.number = r.number;
+            next();
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
   it("createUser: Create Global Admin", function(next){
     post.path = '/rest/createUser';
     post.headers['Auth'] = 'createuser';   
     var json = {'email': GA.email,
                 'password': GA.password,
+                'string': GA.string,
+                'number': GA.number,
                 'user': GlobalAdmin
                }
       , req = request(post, function(res){
 //console.log(res);
-      expect(res.result).toBe(true);
-      expect(res.sessID).not.toBe(null);
-      expect(res.userID).not.toBe(null);
-      GA.userID = res.userID;
-      GA.sessID = res.sessID;
-      users.updateUserRole(GA.userID, ['globalAdmin'], function(e,r){
-        expect(e).toBe(null);
-        expect(r.result).toEqual({ ok: 1, nModified: 1, n: 1 });
+          expect(res.result).toBe(true);
+          expect(res.sessID).not.toBe(null);
+          expect(res.userID).not.toBe(null);
+          GA.userID = res.userID;
+          GA.sessID = res.sessID;
+          users.updateUserRole(GA.userID, ['globalAdmin'], function(e,r){
+            expect(e).toBe(null);
+            expect(r.result).toEqual({ ok: 1, nModified: 1, n: 1 });
 //console.log(r);
-        next();
-      });
-    });
+            next();
+          });
+        });
     req.write(JSON.stringify(json));
     req.end();
   });
@@ -504,6 +594,7 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
+
 
 // operatePlan - functional tests
   it("CREATE one plan: Create one plan (object) using 'create'", function(next){
@@ -665,7 +756,7 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.plans.length).toEqual(2);
+          expect(res.plans.filter(function(el){return filterPlans(el, createdPlans);}).length).toEqual(2);
           next();
         });
     req.write(JSON.stringify(json));
@@ -678,7 +769,7 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.plans.length).toEqual(2);
+          expect(res.plans.filter(function(el){return filterPlans(el, createdPlans);}).length).toEqual(2);
           next();
         });
     req.write(JSON.stringify(json));
@@ -691,7 +782,7 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.plans.length).toEqual(1);
+          expect(res.plans.filter(function(el){return filterPlans(el, createdPlans);}).length).toEqual(1);
           next();
         });
     req.write(JSON.stringify(json));
@@ -704,7 +795,7 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.plans.length).toEqual(1);
+          expect(res.plans.filter(function(el){return filterPlans(el, createdPlans);}).length).toEqual(1);
           next();
         });
     req.write(JSON.stringify(json));
@@ -717,7 +808,7 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.plans.length).toEqual(1);
+          expect(res.plans.filter(function(el){return filterPlans(el, createdPlans);}).length).toEqual(1);
           next();
         });
     req.write(JSON.stringify(json));
@@ -757,7 +848,7 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-
+  
 /*
   it(": ", function(next){
     post.path = '/rest/';
@@ -790,6 +881,7 @@ describe("REST API:", function(){
       });
     });
   });
+
   it("Remove Global Admin from the system", function(next){
     ldap.remove(GA.email, function(e,r){
       expect(r).toBe(true);
@@ -804,6 +896,7 @@ describe("REST API:", function(){
       });
     });
   });
+
   it('closing the DB and LDAP connections', function(next){
     ldap.close();
     DB.close();

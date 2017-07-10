@@ -1,15 +1,22 @@
 /**
 * Test description:
-* - Create 2 users, one is a GlobalAdmin
-* - Create a plan
-* - Create 2 applications: LOAN and COLLECT
-* - Create 2 pendants
-* - Reject 1 offer (pendant)
-* - Accept 1 offer (pendant)
-* - Create transaction from the pendant
-* - Accept transaction
+* o Preparation:
+*   - Create 2 users, one is a GlobalAdmin, second one is BusinessAdmin
+*   - Create a plan
+* o Test bed:
+*   - Create 2 applications: LOAN and COLLECT
+*   - Create 2 pendants
+*   - Reject 1 offer (pendant)
+*   - Accept 1 offer (pendant)
+*   - Create transaction from the pendant
+*   - Accept transaction
+* o Cleaning
+*   - Remove applications
+*   - Remove users
+*   - Remove the plan
 * 
-* 
+* o 
+*   - 
 * 
 **/
 // LDAP
@@ -22,7 +29,7 @@ ldap.init(ldapClient);
 // DB
 var session = require('models')('sessions')
   , users = require('models')('users')
-  , count = require('models')('counters')
+  , applications = require('models')('applications')
   , MongoClient = require('mongodb').MongoClient
   , mongo = require('config').mongo
   , DB = {};
@@ -93,15 +100,15 @@ var FE = {
 
   , GA = {
       lang: 'eng',
-      email: 'globAdmin@v30.amdocs.com',
+      email: 'gena.alter@v30.amdocs.com',
       password: '1234'
     }
 
-  , GlobalAdmin = {
-      firstName:  'Global',
-      familyName: 'Admin',
+  , GenaAlter = {
+      firstName:  'Gena',
+      familyName: 'Alter',
       phone: '545433666',
-      email: 'globAdmin@v30.amdocs.com',
+      email: 'gena.alter@v30.amdocs.com',
       currency: 'ils',
       country: 'israel',
       city: 'kfarsaba',
@@ -109,17 +116,17 @@ var FE = {
       bankAccount: [{ name: 'bankleumileisraelltd',
                       site: '900',
                       account: '234234/88',
-                      accountOwner: 'Global Admin'
+                      accountOwner: 'Gena Alter'
                     },
                     {name: 'bankhapoalimltd',
                       site: '400',
                       account: '345612345',
-                      accountOwner: 'Global Admin'
+                      accountOwner: 'Gena Alter'
                     },
                     {name: 'israeldiscountbankltd',
                       site: '3455',
                       account: '34-543645',
-                      accountOwner: 'Global Admin'
+                      accountOwner: 'Gena Alter'
                     }]
       
     }
@@ -134,18 +141,30 @@ var d = new Date()
   , month = d.getMonth()
   , today = d.getDate()
   , tomorrow = new Date(d.setDate(today + 1)).getTime()
+  
+  , loanApp = {
+      type: 'loan',
+      amount: 300
+    }
+  , collectApp = {
+      type: 'collect',
+      amount: 200
+    }
 
-  , plan01 = { // Permanent
+  , planLCT = { // Permanent
       description: {'eng': 'Loan - Collect Test','rus': 'Loan - Collect Test','heb': 'Loan - Collect Test'}, // Langs and descriptions can be edited via GUI
       duration: 3, // months
       interest: 30, // procents
       fromDate: getTime(month - 2), // start of active period or Date(01/01/2016)
       tillDate: 'permanent' // end of active period or 'permanent'
     }
+    
+  , loan
   ;
 
-
-// Testing the configuration file
+//
+// Creating initial test components
+//
 describe("REST API:", function(){
   it("is there a DB server running", function(next) {
     MongoClient.connect(dbURI, function(e,db) {
@@ -154,7 +173,7 @@ describe("REST API:", function(){
       DB = db;   // Setting the real DB
       users.setDB(DB);
       session.setDB(DB);
-      count.setDB(DB);
+      applications.setDB(DB);
       next();
     });
   });
@@ -194,13 +213,12 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-
-  it("createUser: Create Global Admin", function(next){
+  it("createUser: Create Gena Alter", function(next){
     post.path = '/rest/createUser';
     post.headers['Auth'] = 'createuser';   
     var json = {'email': GA.email,
                 'password': GA.password,
-                'user': GlobalAdmin
+                'user': GenaAlter
                }
       , req = request(post, function(res){
 //console.log(res);
@@ -209,6 +227,7 @@ describe("REST API:", function(){
       expect(res.userID).not.toBe(null);
       GA.userID = res.userID;
       GA.sessID = res.sessID;
+      // manually make it Global Admin
       users.updateUserRole(GA.userID, ['globalAdmin'], function(e,r){
         expect(e).toBe(null);
         expect(r.result).toEqual({ ok: 1, nModified: 1, n: 1 });
@@ -237,7 +256,7 @@ describe("REST API:", function(){
     req.end();
   });
   it("CREATE one plan: Create one plan (object) using 'create'", function(next){
-    var plan = plan01;
+    var plan = planLCT;
     post.path = '/rest/operatePlan';
     post.headers['Auth'] = FE.sessID;
     var json = {'plan': plan,
@@ -247,7 +266,7 @@ describe("REST API:", function(){
                }
       , req = request(post, function(res){
           plan.planID = res.plan.planID;
-          createdPlans.push(plan);
+          planLCT = plan;
           expect(res.result).toBe(true);
           expect(res.plan.duration).toEqual(plan.duration);
           expect(res.plan.interest).toEqual(plan.interest);
@@ -258,9 +277,84 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-// operatePlan: remove plans
+
+//
+// Testbed - testing the Applications APIs
+//
+
+  it("CREATE loan application: from loanApp object", function(next){
+    var plan = planLCT;
+    post.path = '/rest/operateApplication';
+    post.headers['Auth'] = FE.sessID;
+    var json = {'operand': 'create',
+                'planID': plan.planID,
+                'type':   loanApp.type,
+                'amount': loanApp.amount,
+                'userID': FE.userID,
+                'sessID': FE.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.sessID).toEqual(FE.sessID);
+          expect(res.application.userID).toEqual(FE.userID);
+          expect(res.application.amount).toEqual(loanApp.amount);
+          expect(res.application.type).toEqual(loanApp.type);
+          expect(res.application.plan.planID).toEqual(planLCT.planID);
+          
+          loanApp = res.application;
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+  it("CREATE collect application: from collectApp object", function(next){
+    post.path = '/rest/operateApplication';
+    post.headers['Auth'] = FE.sessID;
+    var json = {'operand': 'create',
+                'type':   collectApp.type,
+                'amount': collectApp.amount,
+                'userID': FE.userID,
+                'sessID': FE.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.sessID).toEqual(FE.sessID);
+          expect(res.application.userID).toEqual(FE.userID);
+          expect(res.application.amount).toEqual(collectApp.amount);
+          expect(res.application.type).toEqual(collectApp.type);
+          
+          collectApp = res.application;
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+
+
+
+//
+// Removing test objects from the system
+//
+  it("Remove loan application from the system", function(next){
+    applications.remove(loanApp.appID, function(e,r){
+      expect(e).toBe(null);
+      expect(r.result).toEqual({ ok: 1, n: 1 });
+      next();
+    })
+  });
+  it("Remove collect application from the system", function(next){
+    applications.remove(collectApp.appID, function(e,r){
+      expect(e).toBe(null);
+      expect(r.result).toEqual({ ok: 1, n: 1 });
+      next();
+    })
+  });
   it("Remove plan from the system", function(next){
-    var plan = createdPlans.shift();
+    var plan = planLCT;
     post.path = '/rest/operatePlan?operand=remove';
     post.headers['Auth'] = FE.sessID   
     var json = {'planID': plan.planID,
@@ -274,7 +368,7 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-
+  
 /*
   it(": ", function(next){
     post.path = '/rest/';
@@ -307,7 +401,7 @@ describe("REST API:", function(){
       });
     });
   });
-  it("Remove Global Admin from the system", function(next){
+  it("Remove Gena Alter from the system", function(next){
     ldap.remove(GA.email, function(e,r){
       expect(r).toBe(true);
       users.remove(GA.userID, function(e,r){
