@@ -1,3 +1,13 @@
+/**
+* Test description:
+* - 
+* - 
+* - 
+* - 
+* - 
+* 
+* 
+**/
 // LDAP
 var LDAP = require('ldap-client')
   , connect = require('config').ldap.connect
@@ -83,8 +93,8 @@ var FE = {
     }
 
   , GenaAlter = {
-      firstName:  'Global',
-      familyName: 'Admin',
+      firstName:  'Gena',
+      familyName: 'Alter',
       phone: '545433666',
       email: 'gena.alter@v30.amdocs.com',
       currency: 'ils',
@@ -94,17 +104,17 @@ var FE = {
       bankAccount: [{ name: 'bankleumileisraelltd',
                       site: '900',
                       account: '234234/88',
-                      accountOwner: 'Global Admin'
+                      accountOwner: 'Gena Alter'
                     },
                     {name: 'bankhapoalimltd',
                       site: '400',
                       account: '345612345',
-                      accountOwner: 'Global Admin'
+                      accountOwner: 'Gena Alter'
                     },
                     {name: 'israeldiscountbankltd',
                       site: '3455',
                       account: '34-543645',
-                      accountOwner: 'Global Admin'
+                      accountOwner: 'Gena Alter'
                     }]
       
     }
@@ -120,9 +130,12 @@ var d = new Date()
   , today = d.getDate()
   , tomorrow = new Date(d.setDate(today + 1)).getTime()
   
-  , plan01 = {
-    
-    
+  , plan = {
+      description: {'eng': 'Pendants Test','rus': 'Pendants Test','heb': 'Pendants Test Test'}, // Langs and descriptions can be edited via GUI
+      duration: 3, // months
+      interest: 30, // procents
+      fromDate: getTime(month - 2), // start of active period or Date(01/01/2016)
+      tillDate: 'permanent' // end of active period or 'permanent'
     }
 /*  
   , appl01 = { // Loan

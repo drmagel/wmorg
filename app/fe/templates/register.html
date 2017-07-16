@@ -112,17 +112,30 @@
             <label class="col-sm-4 control-label" style="float:{{lang.floatDir}};text-align:{{lang.oppositeFloatDir}}"
               for="phoneNumber">{{lang.tr('phoneNumber')}}</label>
             <div class="col-sm-8">
-              <div class="input-group" style="direction:ltr">
-              <span class="input-group-addon">{{countryCode}}</span>
-                <input class="form-control" style="text-align:left" type="text" ng-model="user.phone"
-                  placeholder="{{phoneExample}}" id="phoneNumber"
-                  ng-keyup="phoneNumberClass = (validatePhoneNumber()) ? 'wmo-input-valid' : 'wmo-input-error'"
-                  ng-class="phoneNumberClass"></input>
-              </div>
+              <div ng-hide="showPhoneAlert()">
+                <div class="input-group" style="direction:ltr">
+                  <span class="input-group-addon">{{countryCode}}</span>
+                  <input class="form-control" style="text-align:left" type="text" ng-model="user.phone"
+                    placeholder="{{phoneExample}}" id="phoneNumber"
+                    ng-keyup="class.phoneNumberClass = (validatePhoneNumber()) ? 'wmo-input-valid' : 'wmo-input-error'"
+                    ng-class="class.phoneNumberClass">
+                  </input>
+                  <span ng-if="phoneIsValid() === 'ok'" class="input-group-addon" style="background-color:#f0ad4e;color:#3c763d;">
+                    <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+                  </span>
+                  <div class="input-group-btn" ng-if="phoneIsValid() === 'alert'">
+                    <button class="btn btn-success" type="button" ng-click="enrollPhoneNumber()">{{lang.tr('validate')}}</button>
+                  </div>
+                </div>
                 <div class="alert alert-warning" style="text-align:{{lang.floatDir}}" role="alert"
-                  ng-show="!!!validatePhoneNumber()">
+                  ng-if="phoneIsValid() === 'usage'">
                   {{lang.tr('phoneNumberRule')}}
                 </div>
+              </div>
+              <uib-alert ng-show="showPhoneAlert()" class="alert register-phone-alert pull-{{lang.oppositeFloatDir}}"
+                         type="danger" role="alert" close="dismissPhoneAlert()">
+                <span>{{lang.tr(phoneAlertMessage)}}</span>                    
+              </uib-alert>            
             </div>
           </div>
         </div> <!-- End Of PersonalDetails -->

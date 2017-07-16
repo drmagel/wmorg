@@ -1,8 +1,10 @@
-wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', '$routeParams', '$location', '$uibModal', 'CreateUser', 'FilterSortTranslated',
-  function($window, $rootScope, $scope, $routeParams, $location, $uibModal, CreateUser, FilterSortTranslated) {
+wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', '$routeParams', '$location',
+                                             '$uibModal', 'CreateUser', 'FilterSortTranslated', 'Enroll',
+  function($window, $rootScope, $scope, $routeParams, $location, $uibModal, CreateUser, FilterSortTranslated, Enroll) {
     var cancelUrl = $LOGIN;
     var submitUrl = $USERS;
     var Url = $REGISTER;
+    var phoneAlert = false;
 
 // MOved to the globals.js - global variables
 //    var passwdValidateRE = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[-=!@#$%+]).{6,}/;
@@ -25,7 +27,7 @@ wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', 
                         (($rootScope.user.firstName  || '').length > 0) &&
                         (($rootScope.user.familyName || '').length > 0) &&
                         (($rootScope.user.city || '').length > 0)       &&
-                        !!($scope.validatePhoneNumber())
+                        ($scope.phoneIsValid() === 'ok')
                       )
 //          break;
         case 'bankAccounts':
@@ -53,15 +55,17 @@ wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', 
       });
     };
 
-    
     $rootScope.email = $window.sessionStorage.getItem('email'),
     $rootScope.user = $rootScope.user || {
       language: $rootScope.lang.lang
     };
+    $rootScope.userPhone = $rootScope.userPhone || '';
     $scope.bankAccounts = $rootScope.user.bankAccounts || [];
     $scope.cityInput = ($rootScope.user.city) ? $rootScope.lang.tr($rootScope.user.city) : '';    
     $scope.countries = Object.keys($COUNTRIES);
     $scope.password = '';
+    $scope.class = {phoneNumberClass: ''};
+    $scope.phoneAlertMessage = 'phone_already_exists';
     
     $scope.validatePasswd = function(){
       return passwdValidateRE.test($scope.password);
@@ -70,6 +74,41 @@ wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', 
     $scope.validatePhoneNumber = function(){
       return phoneNumberValidateRE.test($rootScope.user.phone);
     };
+    
+    $scope.showPhoneAlert = function(){
+      return phoneAlert;
+    };
+    
+    $scope.dismissPhoneAlert = function(){
+      phoneAlert = false;
+      delete $rootScope.user.phone;
+      $scope.class.phoneNumberClass = '';
+    };
+    
+    $scope.phoneIsValid = function(){
+      if($rootScope.userPhone === $rootScope.user.phone){return 'ok'};
+      if((!!!phoneAlert)                &&
+         ($scope.validatePhoneNumber()) &&
+         ($rootScope.userPhone !== $rootScope.user.phone)
+        ){return 'alert'};
+      if((!!!$scope.validatePhoneNumber()) &&
+         (!!!phoneAlert)
+        ){return 'usage'};
+      return 'continue';
+    };
+    
+    $scope.enrollPhoneNumber = function(){
+      Enroll.checkPhone({phone: $rootScope.user.phone},function(res){
+        if(!!res.result){
+          phoneAlert = false;
+          $rootScope.userPhone = $rootScope.user.phone;
+        } else {
+          $rootScope.userPhone = '';
+          phoneAlert = true;
+          $scope.phoneAlertMessage = res.reason || 'no_reason'
+        }
+      })
+    }
     
     $scope.setCountry = function(ctnr){
       var ctnr = ctnr || $rootScope.user.country || $scope.countries[0];

@@ -1,0 +1,276 @@
+Overview:
+~~~~~~~~~
+- DB (Mongo or MySQL or TokuMX)?
+- Languages (Rus + Heb + Eng)
+- HTTPS security
+
+Business model:
+~~~~~~~~~~~~~~~
+- No system bank accounts
+- No dispatchers
+- Show global amount of requests (the balance)
+- Show/set user rating
+- Ability to chose a person you want to loan to and to Collect from
+- Subscription fee (10% of last year profit).
+- Registration present.
+
+Modules:
+~~~~~~~~
+- Registration
+- Banks
+- Form2PDF for agreement and subscription fee receipt + receipts book by request.
+- Internal and external e-mail
+- Picture uploads (bank receipts) - JPG, PDF...
+- Test2SMS (the external service)
+- Code verification
+- Personal balance view
+- Global balance view
+- Loan requests view with filters (as part as negotiation module)
+- Collect offers view with filters (as part as negotiation module)
+
+- Transaction care
+  o Dialog between loaner and Collecter
+  o Transaction status (agreement, paiment, approval && closing) with appropriate correspondence
+
+- Annual membership - 10% from last year revenue + receipt by e-mail after verification.
+- Tax book creation - PDF with all monthly and annual receipts.
+
+
+Administration roles:
+~~~~~~~~~~~~~~~~~~~~~~~
+- No roles means 'member'
+- All the roles are only per country
+- Group / Organization managers (groupAdmin)
+  o Ability to see the member personal balance
+  o Ability to see the member personal correspondence
+  o Conflict resolving
+  o Release the user, set status 'active' from 'inactve'.
+- Business administration (businessAdimn)
+  o Setting/creation new promotions and bandels?
+  o Setting the interest rate (percentage) per loan and create temporary events.
+  o Limits (least and most) amount per loan. The pilot limits are 200 and 1000.
+- Office Administration (officeAdmin)
+  o Restore missed transactions, if required. ???
+  o Expell the law breakers - with detailed description of crime.
+  o Conflict resolving - administrative role only.
+- Global Admin (globalAdmin) (will set manually)
+  o Set/revoke roles from members of admins
+  o and all the previous permissions
+  
+- Hierarchy:  member(nothing) --> groupAdmin --> officeAdmin --> globalAdmin
+              businessAdmin may be any of them.
+  
+Locking the user:
+~~~~~~~~~~~~~~~~~
+- Lock the user for 15 mins if the pasword was wrong more than the 'maxWrongPasswdNum' times.
+- Unlock it automatically after 'lockedPeriod' minutes
+
+System modules:
+~~~~~~~~~~~~~~~
+- Personal balance update (daily)
+- Applications availabilty (daily)
+- Applications and Transactions monitoring (daily)
+- DB backup (daily)
+- Setting Application and Transaction counters (yearly)
+
+
+
+Data Base:
+~~~~~~~~~~
+- JSON Files:
+  o Currency (NIS for pilot, USD, EUR and RUB for pilot, but only some countries)
+  o Country (Israel for pilot, possibly Germany, USA and Russia)
+  o Banks (for each country, just Israel for pilot, but the infrasttucture for all of them)
+- DB replication to several data bases for the hot backup:
+
+
+
+Modules description:
+~~~~~~~~~~~~~~~~~~~~
+- Internal and external e-mail
+  o Keep all the internal correspondence
+  o Send notification by e-mail and SMS
+
+- Registration
+  o Data base (Mongo + LDAP + JSON files for AngularJS)
+  o Registration forms + steps line in process (start)->()->()->(finish)
+  o Validation (TZ + mail + phone number) as one of the registration step.
+    SMS is optionally, but the infrastructure must be created.
+  o Numeric code verification agains robots
+  o Fields: name (Eng and Heb, opt Rus),
+            picture (optionally),
+            ID number,
+            phone number,
+            e-mail,
+            currency,
+            country,
+            region,
+            language,
+            bank account or several, but at least one during the registration.
+       * Social fields:
+            mentor - the person who bringed me in - not sure I want it
+            group leader - obligatory, but may be updated any time.
+         They are optional.
+         The group leader may be assigned based on location info
+         and may be updated any time.
+  o Form2PDF - Show created agreement, sign and send it by e-mail.
+  
+- Unsubscription / removing account
+  o The account status may be 'disabled'/'enabled'/'locked'/'expelled'
+    * 'inactive'/'disabled' - user unsubscribed by his request
+    * 'active'/'enabled' - active user
+    * 'locked' - temporary locked by any reason
+    * 'expelled' - user is disabled and expelled because his previous behaviour
+  o Account will never be deleted. Only 'disabled' or/and 'expelled'
+  o All transactions will be stored and accessible in the DB.
+
+- Negotiation:
+  o Loan offers view with filters
+    * Can be applyed any time on any created Collect request.
+    * Can be sent to several receipients up to the whole amount is offered.
+    * The offer must be accepted. Only after that the money shoul be transferred.
+      1. Create the application (loan or collect)
+      2. Choose applications from the list (it may be more, than requested amount)
+      3. Send notification to the applications owners for confirmation
+      4. Pick up the exact amount from the confirmed applicaitons.
+         Add some more applicaitons if the requested amount is not provided.
+         Wait for confirmation and fill up the amount.
+      5. On this point the [PROCESS] button become active.
+         Once pressed the transactions have been created.
+         The application status has switched to 'inProcess'      
+
+  o Collect offers view with filters
+    * The same - can be applied any time.
+    * The same - can be asked from several loaners till the end of request.
+    * The loaner should accept the request and only then transfer the amount.
+
+  o Application lifecycle (status)
+    * Create (active)
+    * Negotiation process (active)
+    * Create transactions (active)
+    * LOAN: Once this part confirmed, the plan is activated on the loaned amount.
+      The rest is available for new negotiation process.
+      COLLECT: freeze the relevant apps till the confirmation
+    * Fully confirmed, freezed till release (freezed)
+    * Available for collection (completed) --> ASSET is created, LOAN application is moving to Archive.
+    * COLLECT apps can be created only from ASSET.
+    * When ASSET balance achieves 0, ASSET application is moving to Archive.
+    * When COLLECT application is completed, it is moving to Archive as well.
+    * Cancelation process:
+      o LOAN:
+        - No cancelation until there are opened transactions
+        - The pendants is removing from other applications and from the DB.
+        - Plan is canceled, only asset amount will be returned.
+        - The status set to 'canceled', and applicaiton is moving to Archive.
+        - If there is some asset amount, ASSET applicaiton is created.
+      o COLLECT:
+        - No cancelation until there are opened transactions.
+        - The pendants is removing from other applications and from the DB.
+        - The status is set to 'canceled', and applicaiton is moving to Archive.
+        - ASSET application is creating with the rest amount.
+//  LOAN: -> active (possible till end of plan) -> freezed -> available -> pending(pending,pending) -> completed.
+
+  LOAN: -> active (possible till end of plan) -> freezed (optional) -> completed.
+  ASSET: -> active -> completed
+  COLLECT: -> active -> completed
+
+  o Loan Negotiation process:
+    1. Loan: Amount == Balance :: The LOAN application is just created
+    2. Loan: Amount == Balance + Pending :: The negotiation process has startet.
+                                            The pendant is active for preconfigured time (2 or 3 days)
+                                            If LOAN offer not accepted (rejected or the time is over),
+                                            then Pendant is returned to the Balance:  Balance = Pending[X].amount + Balance
+    3. Pendants has two statuses: offeres or approved
+        offered - means application offers its amount
+        approved - means applicaiton is ready to the payment phase
+       After transaction has been created, the Pendants[X] is removed from the list,
+          Balance = Balance - Pendants[X].amount , and Pendants[X] is deleted from the data base.
+       After transaction has been approved, Asset = Asset + Transaction[X].amount
+    4. Balance == 0.00 && Asset == Amount :: Means all the LOAN amount is loaned to different COLLECTs.
+                          The appilication swithes the status to freezed and waits for the release date.
+    
+    
+    
+    [LOAN]
+    Amount:   300.00  | 300.00 | 300.00 | 300.00 | 300.00 | 300.0
+    Asset:      0.00  |   0.00 |   0.00 |   0.00 |   0.00 | 100.0
+    Balance:  300.00  | 250.00 | 300.00 | 200.00 | 200.00 | 200.0
+    Pending:  0.00    | 50.00  | 0.00   | 100.00 | 100.00 |  0.00
+              Initial | Offer  | Loan   | Offer  | Loan   | Transaction
+                      |to loan |rejected|to loan |accepted| (payment) closed.
+
+  o Collect Negotiation process:
+    1. Create the collect amount from different LOAN applications.
+    2. Send some offers to the loaners for approval. The requested amount maybe greater than the collect amount.
+    3. Create tranzactions from the approved offers. The tranzactions must be equal to the collect amount.
+       The other offers will be released and the Pendants will be returned to their Ballances
+    
+          
+          Available  
+  20   |        |    |
+  20   |        | 50 |
+  20   |=> 100  |    | Confirmation and release pendants
+  20   |        | 50 | 
+  20   | App  Transactions
+    Pending
+
+
+  o Transaction lifecycle:  
+    1. Create.
+        After Pendant is approved by both sides, the transaction is created.
+        Pendant (pndID) is removed from the table and from applications lists (application.pendants).
+    2. Approve.
+        Only after the amount is transferred to the bank account.
+        a. Update applications values
+        b. Set the transaction status to 'completed'
+        c. Archive the transaction.
+    3. Cancel.
+        Only by GroupAdmin and above.
+        a. Update both the applications.
+        b. Archive the transaction with the status 'canceled'.
+        c. Update the user rating if it is necessary.
+  
+Lows:
+~~~~~
+- Startup / registration bundle:
+  o The least loan amount is 200
+  o The 'registration gift' Collect amount is 50
+  o The least 'frozen' time is one month. And the interes is 10% a month.
+  o The refistration profit is 70.
+  o The algorithm:
+    * The Collect amount is created just after the registration, but it is graid out.
+    * It become be available the day just after the loan offer is created. On this point it is possible to send request to loaner.
+    * If the Collect request has been applyed, it is still invisible for other loaners for choosing.
+      It become be visible just after the loan offer was applied and confirmed at least for the same amount.
+    * The Collect request gets the most weight
+      and goes to the top of the list just after the loan offer has been applied in order to make sure it will be paid ASAP.
+
+- Interest lows (Plans):
+  o The interest is counted for the actually loaned amount, but the start calculation date is the day the offer is created.
+    * If the whole period nobody asked to loan no interest will be provided.
+    * If only partial amount was loaned, the {loaned amount + proportional interest} will be released.
+  o The weight of the loan offer will be up prior the last date in order to up it in the list.
+  o The loaner may and should look for Collecters in order to loan the whole amount.
+
+
+- Collect lows:
+  o It is possible to request a partial amount. The rest with remain unchanged, with no interest.
+  o It is possible to combine different remains to one request. The amount must be divisible by 10 (different for various currency).
+  o The Collecter may and should look for Loaner as well as vice versa.
+  o It is possible to create a Collect request before the release time, but only for the loaned amount. The interest is zeroed.
+
+Business Flows (screens)
+- Registration:
+  BF: login/enroll --> validate {string and number} --> user information including group leader --> upload user photo(skip) --> finish.
+  APIs: 1. enroll --> getGLList --> createUser --> uploadUserPhoto
+  
+- User Home screen:
+
+
+- Business Manager screen:
+  o Dropdown with 'Active plans', 'Pending plans', 'Expired plans'  and 'All plans'
+  o Actions: Add, Clone(+Edit), Edit, Delete
+    - Active plan: Edit only description "valid until" "expiration date"
+    - Pending plan (created, but still not active): full editing including delete
+    - Expired plan (archived): editing disabled except of description 
+  o Search: by planID, by description, by period

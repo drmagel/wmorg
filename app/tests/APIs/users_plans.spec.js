@@ -197,7 +197,7 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-  it("ENROLL: check the e-mail and respond with string and number", function(next){
+  it("ENROLL: check the e-mail and respond with TRUE", function(next){
     post.path = '/rest/enroll?operand=checkEmail';
     post.headers['Auth'] = 'enroll';   
     var json = {'email': FE.email,
@@ -206,9 +206,6 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(Number(res.number)).toEqual(jasmine.any(Number));
-          expect(res.string).toEqual(jasmine.any(String));
-          expect(res.email).toEqual(FE.email);
           next();
         });
     req.write(JSON.stringify(json));
@@ -267,7 +264,7 @@ describe("REST API:", function(){
 //console.log(res);
           expect(res.result).toBe(false);
           expect(res.email).toEqual(FE.email);
-          expect(res.reason).toMatch(/already_exists/);
+          expect(res.reason).toMatch(/email_already_exists/);
           expect(res.userStatus).not.toBe(null)
           expect(Number(res.groupAdminUserID)).toEqual(jasmine.any(Number));
           next();
@@ -285,7 +282,7 @@ describe("REST API:", function(){
 //console.log(res);
           expect(res.result).toBe(false);
           expect(res.phone).toEqual(KimiPut.phone);
-          expect(res.reason).toMatch(/already_exists/);
+          expect(res.reason).toMatch(/phone_already_exists/);
           expect(res.userStatus).not.toBe(null)
           expect(Number(res.groupAdminUserID)).toEqual(jasmine.any(Number));
           next();

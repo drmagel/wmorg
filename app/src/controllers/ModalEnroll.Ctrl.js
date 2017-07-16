@@ -1,23 +1,44 @@
-wmoControllers.controller('ModalEnrollCtrl', ['$scope', '$rootScope', '$uibModalInstance', 'validNumber', 'validString', 'validEmail',
-  function($scope, $rootScope, $uibModalInstance, validNumber, validString, validEmail) {
-    $scope.validNumber = validNumber;
-    $scope.validString = validString;
-    $scope.validEmail  = validEmail;
-    $scope.input = {};
+wmoControllers.controller('ModalEnrollCtrl', ['$scope', '$rootScope', '$uibModalInstance', 'Enroll', 'Email',
+  function($scope, $rootScope, $uibModalInstance, Enroll, Email) {
+//    $scope.resNumber = resNumber;
+//    $scope.resString = resString;
+//    $scope.resEmail  = Email;
+    var email = Email
+      , hideInput = false
+      ;
+    $scope.input = {verNumber: '',
+                    verString: '',
+                    verNumberClass: '',
+                    verStringClass: ''
+                   };
 
     $scope.validateNumber = function(){
-      return $scope.validNumber === $scope.input.verNumber;
-    };
-    
-    $scope.validateString = function(){
-      return $scope.validString === $scope.input.verString;
-    };
-    
-    $scope.disabled = function() {
-      return !!!($scope.validateString() && $scope.validateString());
+      return $scope.input.verNumber.match(/^[0-9]{8}$/);
     };    
+    $scope.validateString = function(){
+      return $scope.input.verString.match(/^[a-z]{8}$/);
+    };    
+    $scope.disabled = function() {
+      return !!!($scope.validateString() && $scope.validateString() && !!!$scope.hideInput);
+    };
+    $scope.showAlert = function(){
+      return hideInput;
+    };
+    $scope.dismissAlert = function(){
+      hideInput = false;
+      $scope.input.verNumber = '';
+      $scope.input.verString = '';
+      $scope.input.verNumberClass = '';
+      $scope.input.verStringClass = '';
+    };
     $scope.register = function() {
-      $uibModalInstance.close($scope.validEmail);
+      Enroll.reassert({email: email, number: $scope.input.verNumber, string: $scope.input.verString}, function(res){
+        if(!!res.result){
+          $uibModalInstance.close(email);        
+        } else {
+          hideInput = true;
+        }
+      })
     };
     $scope.cancel = function() {
       $uibModalInstance.dismiss('canceled');

@@ -119,11 +119,13 @@ wmoControllers.controller('CreatePlanCtrl', ['$window', '$location', '$scope', '
   }]);
 
 
-wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', '$routeParams', '$location', '$uibModal', 'CreateUser', 'FilterSortTranslated',
-  function($window, $rootScope, $scope, $routeParams, $location, $uibModal, CreateUser, FilterSortTranslated) {
+wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', '$routeParams', '$location',
+                                             '$uibModal', 'CreateUser', 'FilterSortTranslated', 'Enroll',
+  function($window, $rootScope, $scope, $routeParams, $location, $uibModal, CreateUser, FilterSortTranslated, Enroll) {
     var cancelUrl = $LOGIN;
     var submitUrl = $USERS;
     var Url = $REGISTER;
+    var phoneAlert = false;
 
 // MOved to the globals.js - global variables
 //    var passwdValidateRE = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[-=!@#$%+]).{6,}/;
@@ -146,7 +148,7 @@ wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', 
                         (($rootScope.user.firstName  || '').length > 0) &&
                         (($rootScope.user.familyName || '').length > 0) &&
                         (($rootScope.user.city || '').length > 0)       &&
-                        !!($scope.validatePhoneNumber())
+                        ($scope.phoneIsValid() === 'ok')
                       )
 //          break;
         case 'bankAccounts':
@@ -174,15 +176,17 @@ wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', 
       });
     };
 
-    
     $rootScope.email = $window.sessionStorage.getItem('email'),
     $rootScope.user = $rootScope.user || {
       language: $rootScope.lang.lang
     };
+    $rootScope.userPhone = $rootScope.userPhone || '';
     $scope.bankAccounts = $rootScope.user.bankAccounts || [];
     $scope.cityInput = ($rootScope.user.city) ? $rootScope.lang.tr($rootScope.user.city) : '';    
     $scope.countries = Object.keys($COUNTRIES);
     $scope.password = '';
+    $scope.class = {phoneNumberClass: ''};
+    $scope.phoneAlertMessage = 'phone_already_exists';
     
     $scope.validatePasswd = function(){
       return passwdValidateRE.test($scope.password);
@@ -191,6 +195,41 @@ wmoControllers.controller('CreateUserCtrl', ['$window', '$rootScope', '$scope', 
     $scope.validatePhoneNumber = function(){
       return phoneNumberValidateRE.test($rootScope.user.phone);
     };
+    
+    $scope.showPhoneAlert = function(){
+      return phoneAlert;
+    };
+    
+    $scope.dismissPhoneAlert = function(){
+      phoneAlert = false;
+      delete $rootScope.user.phone;
+      $scope.class.phoneNumberClass = '';
+    };
+    
+    $scope.phoneIsValid = function(){
+      if($rootScope.userPhone === $rootScope.user.phone){return 'ok'};
+      if((!!!phoneAlert)                &&
+         ($scope.validatePhoneNumber()) &&
+         ($rootScope.userPhone !== $rootScope.user.phone)
+        ){return 'alert'};
+      if((!!!$scope.validatePhoneNumber()) &&
+         (!!!phoneAlert)
+        ){return 'usage'};
+      return 'continue';
+    };
+    
+    $scope.enrollPhoneNumber = function(){
+      Enroll.checkPhone({phone: $rootScope.user.phone},function(res){
+        if(!!res.result){
+          phoneAlert = false;
+          $rootScope.userPhone = $rootScope.user.phone;
+        } else {
+          $rootScope.userPhone = '';
+          phoneAlert = true;
+          $scope.phoneAlertMessage = res.reason || 'no_reason'
+        }
+      })
+    }
     
     $scope.setCountry = function(ctnr){
       var ctnr = ctnr || $rootScope.user.country || $scope.countries[0];
@@ -270,10 +309,10 @@ wmoControllers.controller('EnrollCtrl', ['$window', '$scope', '$rootScope', '$ui
   function($window, $scope, $rootScope, $uibModal, $location, Enroll) {
     $scope.enroll = function(email) {
       var lang = $window.sessionStorage.getItem('lang') || 'eng';
-      Enroll.get({email: email, lang: lang}, function(res){
+      Enroll.checkEmail({email: email, lang: lang}, function(res){
         if(!!res.result) {
-          $scope.number = res.number;
-          $scope.string = res.string;
+//          $scope.number = res.number;
+//          $scope.string = res.string;
           $scope.openModal();
         }
 //console.log(res);        
@@ -290,13 +329,7 @@ wmoControllers.controller('EnrollCtrl', ['$window', '$scope', '$rootScope', '$ui
         controller: 'ModalEnrollCtrl',
         size: 'md', //'sm' - small; 'md' - medium; 'lg' - large
         resolve: {
-          validNumber: function(){
-            return $scope.number;
-          },
-          validString: function(){
-            return $scope.string;
-          },
-          validEmail: function(){
+          Email: function(){
             return $scope.email;
           }
         }
@@ -311,13 +344,45 @@ wmoControllers.controller('EnrollCtrl', ['$window', '$scope', '$rootScope', '$ui
         }
       );
     };
+/*
+    $scope.openModal = function() {
+      var modal = $uibModal.open({
+        animation: true,
+        keyboard: true,
+        backdrop: 'static', //'true' 'false', or 'static'
+        templateUrl: $TMPL + 'enroll.html',
+        controller: 'ModalEnrollCtrl',
+        size: 'md', //'sm' - small; 'md' - medium; 'lg' - large
+        resolve: {
+          resNumber: function(){
+            return $scope.number;
+          },
+          resString: function(){
+            return $scope.string;
+          },
+          resEmail: function(){
+            return $scope.email;
+          }
+        }
+      });
+      modal.result.then(
+        function(email){
+          $window.sessionStorage.setItem('email', email);
+          $location.path($REGISTER + $START).replace(); //redirection to register.html
+        },
+        function(){
+          $window.sessionStorage.setItem('email', '');
+        }
+      );
+    };
+*/
 
     $scope.showAlert = function(){
       if(($scope.response || {}).reason === undefined) {return false};
       if(!!$scope.response.reason){$scope.inputChanged = false;}
       return !!$scope.response.reason;
     };
-    $scope.dissmissAlert = function(){
+    $scope.dismissAlert = function(){
       delete $scope.email;
       return $scope.response.reason = false;
     };
@@ -507,7 +572,7 @@ wmoControllers.controller('LoginCtrl', ['$window', '$scope', '$location', 'Login
       if(!!$scope.response.reason){$scope.inputChanged = false;}
       return !!$scope.response.reason;
     };
-    $scope.dissmissAlert = function(){
+    $scope.dismissAlert = function(){
       delete $scope.password;
       return $scope.response.reason = false;
     };
@@ -536,26 +601,47 @@ wmoControllers.controller('LogoutCtrl', ['$window', '$location', '$rootScope', '
     });
   }]);
   
-wmoControllers.controller('ModalEnrollCtrl', ['$scope', '$rootScope', '$uibModalInstance', 'validNumber', 'validString', 'validEmail',
-  function($scope, $rootScope, $uibModalInstance, validNumber, validString, validEmail) {
-    $scope.validNumber = validNumber;
-    $scope.validString = validString;
-    $scope.validEmail  = validEmail;
-    $scope.input = {};
+wmoControllers.controller('ModalEnrollCtrl', ['$scope', '$rootScope', '$uibModalInstance', 'Enroll', 'Email',
+  function($scope, $rootScope, $uibModalInstance, Enroll, Email) {
+//    $scope.resNumber = resNumber;
+//    $scope.resString = resString;
+//    $scope.resEmail  = Email;
+    var email = Email
+      , hideInput = false
+      ;
+    $scope.input = {verNumber: '',
+                    verString: '',
+                    verNumberClass: '',
+                    verStringClass: ''
+                   };
 
     $scope.validateNumber = function(){
-      return $scope.validNumber === $scope.input.verNumber;
-    };
-    
-    $scope.validateString = function(){
-      return $scope.validString === $scope.input.verString;
-    };
-    
-    $scope.disabled = function() {
-      return !!!($scope.validateString() && $scope.validateString());
+      return $scope.input.verNumber.match(/^[0-9]{8}$/);
     };    
+    $scope.validateString = function(){
+      return $scope.input.verString.match(/^[a-z]{8}$/);
+    };    
+    $scope.disabled = function() {
+      return !!!($scope.validateString() && $scope.validateString() && !!!$scope.hideInput);
+    };
+    $scope.showAlert = function(){
+      return hideInput;
+    };
+    $scope.dismissAlert = function(){
+      hideInput = false;
+      $scope.input.verNumber = '';
+      $scope.input.verString = '';
+      $scope.input.verNumberClass = '';
+      $scope.input.verStringClass = '';
+    };
     $scope.register = function() {
-      $uibModalInstance.close($scope.validEmail);
+      Enroll.reassert({email: email, number: $scope.input.verNumber, string: $scope.input.verString}, function(res){
+        if(!!res.result){
+          $uibModalInstance.close(email);        
+        } else {
+          hideInput = true;
+        }
+      })
     };
     $scope.cancel = function() {
       $uibModalInstance.dismiss('canceled');
@@ -715,7 +801,7 @@ wmoControllers.controller('ModalValidateByPasswordCtrl', ['$window', '$scope', '
       if(!!response.reason){inputChanged = false;}
       return !!response.reason;
     };
-    $scope.dissmissAlert = function(){
+    $scope.dismissAlert = function(){
       delete $scope.data.password;
       return response.reason = false;
     };

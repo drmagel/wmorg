@@ -20,7 +20,7 @@ wmoControllers.controller('ModalValidateByPasswordCtrl', ['$window', '$scope', '
       if(!!response.reason){inputChanged = false;}
       return !!response.reason;
     };
-    $scope.dissmissAlert = function(){
+    $scope.dismissAlert = function(){
       delete $scope.data.password;
       return response.reason = false;
     };

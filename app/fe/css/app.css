@@ -198,6 +198,11 @@
   max-width: 20px;
 }
 
+.register-phone-alert {
+  width:100% !important;
+  text-align:center !important;
+}
+
 /* Users Home */
 
 .uh-fa-nav {

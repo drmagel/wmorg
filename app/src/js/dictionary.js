@@ -897,10 +897,16 @@ var $DICT = {
   "heb": "פרטים אישיים"
   },
 
-"already_exists": {
+"email_already_exists": {
   "eng": "This address already exists in the system",
   "rus": "Этот адрес уже существует в системе",
   "heb": 'הדוא"ל כבר קיים במערכת'
+  },
+  
+"phone_already_exists": {
+  "eng": "This phone number already exists in the system",
+  "rus": "Этот номер телефона уже существует в системе",
+  "heb": 'מספר הטלפון כבר קיים במערכת'
   },
   
 "no_reason": {
@@ -1274,6 +1280,19 @@ var $DICT = {
   "rus": "Удалить из системы",
   "heb": "הסר מהמערכת"
   },
+
+"eiherStringOrNumberIsWrong": {
+  "eng": "Either the string or the number is incorrect",
+  "rus": "Ошибка в строке или в номере",
+  "heb": "מחרוזת או מספר שגוי"
+  },
+
+"validate": {
+  "eng": "Validate",
+  "rus": "Проверить",
+  "heb": "לאמת"
+  },
+
 
 "": {
   "eng": "",

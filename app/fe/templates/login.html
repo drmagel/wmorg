@@ -25,7 +25,7 @@
                 <input class="login-input center-block" type="password" id="password" name="password"
                   ng-hide="showAlert()" ng-change="changed()" ng-model="password" placeholder="{{lang.tr('password')}}"
                   required autocomplete="off"></input>
-                <uib-alert ng-show="showAlert()" class="alert login-alert" type="danger" role="alert" close="dissmissAlert()">
+                <uib-alert ng-show="showAlert()" class="alert login-alert" type="danger" role="alert" close="dismissAlert()">
                   <span>{{lang.tr(alertMessage())}}</span>                    
                 </uib-alert>
               </div>
@@ -41,7 +41,7 @@
                 <input class="login-input center-block" type="email" id="email" name="email"
                   ng-hide="showAlert()"  ng-change="changed()" ng-model="email" placeholder="{{lang.tr('emailAddress')}}"
                   required autocomplete="on"></input>
-                <uib-alert ng-show="showAlert()" class="alert login-alert" type="danger" role="alert" close="dissmissAlert()">
+                <uib-alert ng-show="showAlert()" class="alert login-alert" type="danger" role="alert" close="dismissAlert()">
                   <span>{{lang.tr(alertMessage())}}</span>                    
                 </uib-alert>
               </div>  

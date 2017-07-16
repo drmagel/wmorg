@@ -6,15 +6,18 @@
   <div class="modal-body centered">
     <input class="enroll-input" type="text" id="verNumber" name="verNumber"
       ng-model="input.verNumber" placeholder="{{lang.tr('verificationNumber')}}"
-      ng-keyup="verNumberClass = (validateNumber()) ? 'wmo-input-valid' : 'wmo-input-error'"
-      ng-class="verNumberClass">
+      ng-keyup="input.verNumberClass = (validateNumber()) ? 'wmo-input-valid' : 'wmo-input-error'"
+      ng-class="input.verNumberClass">
     </input>
     <br>
     <input class="enroll-input" type="text" id="verString" name="verString"
       ng-model="input.verString" placeholder="{{lang.tr('verificationString')}}"
-      ng-keyup="verStringClass = (validateString()) ? 'wmo-input-valid' : 'wmo-input-error'"
-      ng-class="verStringClass">
+      ng-keyup="input.verStringClass = (validateString()) ? 'wmo-input-valid' : 'wmo-input-error'"
+      ng-class="input.verStringClass" ng-hide="showAlert()">
     </input>
+    <uib-alert ng-show="showAlert()" class="alert login-alert" type="danger" role="alert" close="dismissAlert()">
+      <span>{{lang.tr('eiherStringOrNumberIsWrong')}}</span>                    
+    </uib-alert>
   </div>
   <div class="modal-footer wmo-modal-footer" style="direction:{{lang.direction}}">
     <div class="row">

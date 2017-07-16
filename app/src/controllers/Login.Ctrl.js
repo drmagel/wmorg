@@ -21,7 +21,7 @@ wmoControllers.controller('LoginCtrl', ['$window', '$scope', '$location', 'Login
       if(!!$scope.response.reason){$scope.inputChanged = false;}
       return !!$scope.response.reason;
     };
-    $scope.dissmissAlert = function(){
+    $scope.dismissAlert = function(){
       delete $scope.password;
       return $scope.response.reason = false;
     };

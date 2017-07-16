@@ -1,0 +1,618 @@
+Structures (JSON files):
+~~~~~~~~~~~~~~~~~~~~~~~~
+lang.tr = function(arg) {
+// Receive strig or array
+// Returns translated string of array
+  if(arg.isArray){return arg.map(function(str){return $DICT[str][this.lang]})};
+  return $DICT[arg][this.lang];
+}
+
+currency = {
+  ILS: { name: 'IsraeliShekel',
+         spelling: lang.tr(this.name),
+         sign: '₪',
+         picture: linkTo(this.name),
+         country: lang.tr(['Israel'])
+  },
+  EUR: { name: 'Euro',
+         spelling: lang.tr(this.name),
+         sign: '€',
+         picture: linkTo(this.name),
+         country: lang.tr(['Germany', 'France', 'Finland'])
+  }
+}
+
+country = {
+  israel: { name: lang.tr('Israel'),
+            regions: lang.tr(['Jerusalem', 'GushDan', 'Haifa', 'Eilat', 'Negev'])
+  }
+}
+
+translations = {
+  IsraeliShekel: { eng: 'Israeli Shekel',
+                   rus: 'Израильский Шекель',
+                   heb: 'שקל חדש'
+  },
+  Euro: { eng: 'Euro',
+          rus: 'Евро',
+          heb: 'אירו'
+  },
+  Israel: { eng: 'Israel',
+            rus: 'Израиль',
+            heb: 'ישראל'
+  }
+}
+
+dropDownMenus = {
+  roles: lang.getList(rolesList),
+  userStatus: lang.getList(userStatusList)
+}
+
+config/ Directory:
+==================
+globals.js:
+~~~~~~~~~~~
+module.exports  = {
+  maxWrongPasswdNum: 3,   // attempts
+  lockedPeriod: 15,       // munutes
+  roleList: ['groupAdmin','businessAdmin','officeAdmin','globalAdmin'],
+  userStatusList: ['active','inactive','locked','expelled'],
+}
+
+config.js:
+~~~~~~~~~
+var crypto = require('crypto');
+
+module.exports =  {
+// Server
+  server: {
+    port: 3000
+  },
+// DB
+  mongo: {
+    host: '127.0.0.1',
+    port: 27017,
+    dbname: "wwmmorg",
+    dbuser: 'wwmm',
+    dbpass: '12WWmm0-'
+  },
+// Login
+  login: {
+    maxWrongPasswdNum: 3,   // attempts
+    lockedPeriod: 15        // munutes
+  },
+// Session
+  session: {
+    sessionActivePeriod: 30, //minutes
+    generate_sessID: function(){
+      var sha = crypto.createHash('sha256');
+      sha.update(Math.random().toString());
+      return sha.digest('hex');
+    }
+  },
+// Globals
+  globals: {
+    roleList: ['groupAdmin','businessAdmin','officeAdmin','globalAdmin'],
+    userStatusList: ['active','inactive','locked','expelled'],
+    rtlLangList: ['heb']
+  },
+// LDAP
+  ldap: {
+    base: 'ou=Members,dc=wwmm,dc=org',
+    connect: {
+      uri: 'ldap://127.0.0.1:389',
+      validatecert: false
+    },
+    manager: {
+      binddn: 'cn=Manager,dc=wwmm,dc=org',
+      password: 'wwauthmm'
+    }
+  },
+// SMTP
+  smtp: {
+    protocol: 'smtp',
+    host: '192.168.70.1',
+    user: '',
+    pass: '',
+    from: 'noreply@wwmm.org'
+  }
+// Plans
+  planProperties: {
+    planDateFormat: 'dd/MM/yyyy', // Formant for 21/12/2016
+    pendingStartPeriod: 3, // Days
+    pendingFinishPeriod: 7, // Days
+    minActivePeriod: 28, // Days
+    maxPlanPercentage: 100, // Procents
+    maxPlanDuration: 12 // Months
+  }
+}
+
+
+LDAP:
+~~~~
+dn: mail=<email@address>,ou=Members,dc=wwmm,dc=org
+objectClass: top
+objectClass: person
+cn: <email@address> 
+sn: <userID>
+userPassword: ****
+
+LDAP:
+- No TTL is required
+- Listen to the 127.0.0.1 only
+
+Collections (Tables):
+~~~~~~~~~~~~~~~~~~~~~
+
+- User related:
+==================
+/* Possible with some data base of names */
+  firstName: {  eng: '',
+                rus: '',
+                heb: ''
+  },
+  familyName: { eng: '',
+                rus: '',
+                heb: ''
+  },
+  
+  users = {
+  userID: , //number
+  userStatus: '',
+  userRole: ['','',''],
+  userRating: { score: '', //number
+                evaluations: '' //number
+              },
+
+  firstName: '',
+  familyName: '',
+  photoURL: linkTo(this.userID),
+  phone: '',
+  email: '',
+  currency: '',
+  country: '',
+  city:'',
+  language: '',
+  bankAccount: [{ name: '',
+                  site: '',
+                  account: '',
+                  accountOwner: ''
+                },
+                {name: '',
+                  site: '',
+                  account: '',
+                  accountOwner: ''
+                },{name: '',
+                  site: '',
+                  account: '',
+                  accountOwner: ''
+                }],
+  groupAdminUserID: ,
+  registrationDate: Date.now
+}
+
+// checked during the enrollment process.
+// Defence on createUser API
+enrolls { 
+  email: ,
+  string: ,
+  number: ,
+  enrolmentDate: Date.now
+}
+
+lockedusers = {
+  email = '',
+  attempts = ,
+  lockedTill = Date()
+}
+
+groupadmins = {
+  userID: ,
+  firstName: {},
+  familyName: {},
+  pictureURL: linkTo(this.userID),
+  country: '',
+  region: '',
+  language: '',
+  members: ['','','']
+}
+
+- Payments:
+   o loans
++---------------------------------------------------------------------------------------------------------+
+|appID|amount|plan|creationDate|confirmationDate|releaseDate|linksToPaymets|expectedAmount|availableAmount|
++---------------------------------------------------------------------------------------------------------+
+
+plans = {
+  planID: ,
+  description: {'eng': '','rus': '','heb': ''}, // Langs and descriptions can be edited via GUI
+  duration: , // months
+  interest: , // procents
+  fromDate: , // start of active period or Date(01/01/2016)
+  tillDate: , // end of active period or 'permanent'
+}
+
+
+transactions = {
+  transID: ,
+  amount: ,
+  fromUserID: ,
+  toUserID: ,
+  creationDate: Date.now,
+  confirmationDate: null,
+  correspondence {}
+}
+
+applications = { // global collection
+  appID: ,
+  userID: ,
+  amount: ,
+  balance: ,
+  pending: ,
+  plan: {
+    planID: ,
+    interest: , // procents
+    duration:
+  },
+  transactions: [transID, transID],
+  type: loan | collect,
+  weight: ,
+  status: active|freezed|available|pending|completed,
+  collectedfrom: [{appID: , amount: }, {appID: , amount: }],
+  negotiators: [appID, appID] // only during the negotiation process. Otherwise negotiators: [],
+  releaseDate: app.creationDate + plan.duration
+  creationDate: Date.now()
+}
+
+
+applications = { // LOANs
+  appID: ,
+  userID: ,
+  assetAppID: , //Optional, only if ASSET was created 
+  amount: ,  // initial app amount
+  balance: , // real app amout (goes from 'amount' to 0.00)
+  asset: ,   // loaned money which can be collected
+  pending: , // pending + balance + asset == amount. From pending to asset only after transaction is closed.
+  pendants: [pndID, pndID], // only during the negotiation process. Otherwise pendants: [],
+  plan: {
+    planID: ,
+    interest: , // procents
+    duration: 
+  },
+  transactions: [{transID, amount, status},{}],
+  type: 'loan',
+  weight: ,
+  status: active|freezed|completed|canceled,
+  releaseDate: Date.now() + plan.duration
+  creationDate: Date.now()
+}
+
+applications = { // ASSETs
+  appID: ,
+  userID: ,
+  amount: , // investment * %plan.interest
+  investment: , // loaned amount 
+  applications: [{appID, amount},{}], // COLLECT applicaitons created from it.
+  type: 'asset',
+  status: active|completed,
+  creationDate: Date.now()
+}
+
+applications = { // COLLECTs
+  appID: ,
+  userID: ,
+  assetAppID: , //Optional, only if ASSET was created
+  amount: ,
+  pendants: [pndID, pndID], // only during the negotiation process. Otherwise pendants: [],
+  transactions: [{transID, amount, status},{}], 
+  type: 'collect',
+  weight: ,
+  status: active|completed|canceled,
+  creationDate: Date.now()
+}
+
+appArchive = { // LOANs
+  appID: ,
+  userID: ,
+  assetAppID: , //Optional, only if ASSET was created
+  amount: ,
+  plan: {
+    planID: ,
+    interest: , // procents
+    duration: 
+  },
+  transactions: [transID, transID],
+  type: 'loan',
+  releaseDate: date
+  creationDate: date
+}
+
+appArchive = { // ASSETs
+  appID: ,
+  userID: ,
+  amount: ,
+  applicaitons: [appID, appID],
+  type: 'asset',
+  creationDate: date
+}
+
+appArchive = { // COLLECTs
+  appID: ,
+  userID: ,
+  assetAppID: , //Optional, only if ASSET was created
+  amount: ,
+  transactions: [transID, transID],
+  type: 'collect',
+  creationDate: date
+}
+
+pendants = {
+  pndID: ,
+  loanAppID: ,
+  clctAppID: ,
+  amount: ,
+  status: , // 'offered' or 'approved'
+  overdueDate: date,
+  creationDate: date
+}
+
+transactions = {
+  transID: ,
+  loanUserID: ,
+  loanAppID: ,
+  ctclUserID: ,
+  clctAppID: ,
+  amount: ,
+  status: , // 'active', 'completed' or 'canceled'
+  messages: [{from: '', text: '', creationDate: date}, {}],
+  creationDate: date,
+  overdueDate: date,
+  commitedDate: date
+}
+
+notifications = {
+
+}
+
+
+
+- Others:
+=========
+sessions = {
+  sessID: '',
+  validTill: ,
+  userID: 
+}
+
+counters = {
+  _id = 'userID',
+  seq: 100000000000
+}
+
+counters = {
+  _id = 'appID',
+  seq: 2016000000000
+}
+counters = {
+  _id = 'transID',
+  seq: 2016000000000
+}
+
+
+app.js:
+~~~~~~~
+// var d = require('./dir')(); #-> looks for ./dir/index.js, receives the modules.exports and runs the function(){};
+
+APIs:
+=====
+createUser:
+  req: {user, password, email}
+  headers: Auth createuser
+  res: (sessID, userID, result)
+
+enroll:
+  1. operand: checkEmail /*validate the e-mail and generate string and number*/
+    req: {email}
+    headers: Auth enroll
+    res: {result: true}   // The real string and number are sent by e-mail
+    res: {result: false, reason, userID, userStatus, groupAdminUserID} // Reason: already_exists, non_existent_email
+  2. operand: checkPhone // validate the phone number
+    req: {phone}
+    headers: Auth enroll
+    res: {result: true}
+    res: {result: false, reason, userID, userStatus, groupAdminUserID} // Reason: already_exists
+  3. operand: reassert: // confirm e-mail and validation string ang number    
+    req: {email, string, number}
+    headers: Auth enroll
+    res: {result: true}
+    res: {result: false, reason} /* Reason: not_valid  
+  
+getUser:
+  req: {userID, sessID}
+  headers: Auth sessID
+  res: {sessID, user, result}
+
+login:
+  req: {email, password}
+  headers: Auth login
+  res: (sessID, userID, result)
+
+logout:
+  req: {sessID}
+  headers: Auth sessID
+  res: (result)
+
+setLang:
+  req: {lang}
+  headers: Auth setlang
+  res: (lang, direction, result)
+
+validate:
+  req: {email, password, sessID}
+  headers: Auth sessID
+  res: (sessID, result)
+
+updateUserRating:
+  req: {userID, sessID, score}
+  headers: Auth sessID
+  res: {sessID, userRating, result}
+  
+updateUserRole:
+  1. Session and user permissions validation:
+    res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired, permission_denied, invalid_parameters
+  2. Update userRole of other userID
+    Permission: {userRole: ['globalAdmin']}
+    Data format: {userID: , userRole: ['','']}
+    Request format:
+      req: {userID, sessID, data}
+      headers: Auth sessID
+    Response format:
+    res: {result: true, sessID}
+    res: {result: false, reason, sessID}
+
+operatePlan:
+  1. Session and user permissions validation:
+    res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired, permission_denied
+  2. Operate plan:
+    Operands: 'create', 'update', 'remove', 'get' . No default values
+    Format ('create' example): ({operand: 'create'}) or /rest/operatePlan?operand=create
+    Permission: {userRole: ['businessAdmin']}
+    Plan format: {description: {'eng': '','rus': '','heb': ''}, duration, interest, fromDate, tillDate}
+    Request format for create and update:
+      req: {plan, operand, sessID, userID} // plan can be object or list of objects
+      headers: Auth sessID
+    Response format for create and update:
+      res: {result: true, plan: {planID: ,,,}, sessID}
+      res: {result: false, reason, sessID}
+
+    Request format for remove:
+      req: {planID, operand, sessID, userID} // planID can be number or list of numbers
+      headers: Auth sessID
+    Response format for remove:
+      res: {result: true, planID: planID, sessID}
+      res: {result: false, reason, sessID}
+    
+    Request format for get:
+      req: {planID, filter, operand, sessID, userID} // planID is a number, 'filter' is optional
+      headers: Auth sessID        
+    Response format for get:
+      res: {result: true, planID: planID, plan: {planID: ,,,}, sessID}
+      res: {result: false, reason, sessID}
+
+  
+getPlans:
+  1. Session validation:
+    res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired
+  2. Get plans list:
+    Operands: 'active', 'permanent', 'pending', 'completed', 'all' . The default value is 'active'
+    Format: ('permanent' example): ({operand: 'permanent'}) or /rest/getPlans?operand=permanent
+            (default value example): /rest/getPlans
+    Request format:
+      req: {operand, sessID, userID}
+      headers: Auth sessID
+    Response format:
+      res: {result: true, plans: [{},{},{}], sessID}
+      res: {result: false, plans: [], reason, sessID}
+
+operatePendand:
+  1. Session validation:
+    res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired
+  2. Operands: 'create', 'update', 'remove', 'get', 'getby', 'fliphstatus', 'cancel' . No default values
+    Format ('create' example): ({operand: 'create'}) or /rest/operatePendant?operand=create
+    Permission: any
+    Pendant format: { pndID: ,
+                      loanAppID: ,
+                      clctAppID: ,
+                      amount: ,
+                      status: , // 'offered' or 'approved'
+                      overdueDate: date
+                    }
+    Request format for create and update:
+      req: {pendant, operand, sessID, userID}
+      headers: Auth sessID
+    Response format for create and update:
+      res: {result: true, pendant: {pndID: ,,,}, sessID}
+      res: {result: false, reason, sessID}
+    Tasks:
+      Obtain pndID
+      loanAppID => update Balance and add to Pendans[]
+      clctAppID => add to Pendans[]
+
+          Request format for remove: // Removes the pendant while creating transaction. - MUST be done from transaction API
+            req: { pndID, operand, sessID, userID} // pndID is a number of list of numbers
+            headers: Auth sessID
+          Response format for remove:
+            res: {result: true, pndID: [], sessID}
+            res: {result: false, reason, sessID}
+          Tasks:
+            loanAppID => remove from Pendans[]
+            clctAppID => remove from Pendans[]
+            Remove the pendant by pndID
+
+    Request format for cancel: // Cancel or reject the pendant and set all the applications values back.
+      req: { pndID, operand, sessID, userID} // pndID is a number of list of numbers
+      headers: Auth sessID
+    Response format for cancel:
+      res: {result: true, pndID: [], sessID}
+      res: {result: false, reason, sessID}
+    Tasks:
+      loanAppID => remove from Pendans[], update the Balance.
+      clctAppID => remove from Pendans[]
+      Remove the pendant by pndID
+      
+    Request format for get:
+      req: { pndID, filter: {}, operand, sessID, userID} // filter is optional
+      headers: Auth sessID    
+    Response format for get:
+      res: {result: true, pndID, pendant: {}, sessID}
+      res: {result: false, reason, sessID}
+      
+    Request format for getby:
+      req: { data: {}, filter: {}, operand, sessID, userID} // filter is optional
+      headers: Auth sessID    
+    Response format for getby:
+      res: {result: true, pndID: [], pendant: [{}], sessID}
+      res: {result: false, reason, sessID}
+      
+    Request format for flipstatus: // flip status between 'offered' and 'approved'
+      req: { pndID, operand, sessID, userID}
+      headers: Auth sessID    
+    Response format for flipstatus:
+      res: {result: true, pndID, status, sessID}
+      res: {result: false, reason, sessID}
+
+operateApplication:
+  1. Session validation:
+    res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired
+  2. Operands: 'create', 'get', 'cancel', 'getUsersApps', 'getActiveApps'. No default values
+    Format ('create' example): ({operand: 'create'}) or /rest/operateApplication?operand=create
+    Permission: any
+
+    Request format for create:
+      req: {amount, planID, type, operand, sessID, userID} //type: loan|collect
+      headers: Auth sessID
+    Response format for create:
+      res: {result: true, appID, application: {appID: ,,,}, sessID}
+      res: {result: false, reason, sessID}
+
+    Request format for get:
+      req: { appID, filter: {}, operand, sessID, userID} // filter is optional
+      headers: Auth sessID    
+    Response format for get:
+      res: {result: true, appID, application: {}, sessID}
+      res: {result: false, reason, sessID}
+
+    Request format for cancel: // Cancelation is possible ONLY if no transaction has been created.
+      req: { appID, operand, sessID, userID} // appID is a number of list of numbers
+      headers: Auth sessID
+    Response format for cancel:
+      res: {result: true, appID: [], sessID}
+      res: {result: false, reason, sessID} // Possible reasons: existed_transactions
+    Actions: cancel (remove) all created pendants and update the other side application.
+    
+manageApplication:
+  1. Session validation:
+    res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired
+  2. Operands: 'update', 'remove'. No default values
+    Format ('update' example): ({operand: 'update'}) or /rest/manageApplication?operand=update
+    Permission: ['groupAdmin','officeAdmin','globalAdmin']   
