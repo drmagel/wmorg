@@ -30,6 +30,7 @@ ldap.init(ldapClient);
 var session = require('models')('sessions')
   , users = require('models')('users')
   , applications = require('models')('applications')
+  , enrolls = require('models')('enrolls')
   , MongoClient = require('mongodb').MongoClient
   , mongo = require('config').mongo
   , DB = {};
@@ -66,7 +67,7 @@ var port = require('config').server.port
 
 // Test values
 
-var FE = {
+var KP = {
       lang: 'rus',
       email: 'kuku@v30.amdocs.com',
       password: '1234'
@@ -100,7 +101,7 @@ var FE = {
 
   , GA = {
       lang: 'eng',
-      email: 'gena.alter@v30.amdocs.com',
+      email: 'gaga@v30.amdocs.com',
       password: '1234'
     }
 
@@ -108,7 +109,7 @@ var FE = {
       firstName:  'Gena',
       familyName: 'Alter',
       phone: '545433666',
-      email: 'gena.alter@v30.amdocs.com',
+      email: 'gaga@v30.amdocs.com',
       currency: 'ils',
       country: 'israel',
       city: 'kfarsaba',
@@ -161,7 +162,6 @@ var d = new Date()
     
   , loan
   ;
-
 //
 // Creating initial test components
 //
@@ -174,14 +174,38 @@ describe("REST API:", function(){
       users.setDB(DB);
       session.setDB(DB);
       applications.setDB(DB);
+      enrolls.setDB(DB);
       next();
     });
+  });
+  it("ENROLL: check the e-mail and respond with strings", function(next){
+    post.path = '/rest/enroll';
+    post.headers['Auth'] = 'enroll';   
+    var json = {'operand': 'checkEmail',
+                'email': KP.email,
+                'lang': KP.lang
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          enrolls.bring(KP.email, function(e,r){
+            expect(e).toBe(null);
+//console.log(r);
+            expect(r).not.toBe(null);
+            KP.string = r.string;
+            KP.number = r.number;
+            next();
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();
   });
   it("createUser: Create new user Kimi Put", function(next){
     post.path = '/rest/createUser';
     post.headers['Auth'] = 'createuser';   
-    var json = {'email': FE.email,
-                'password': FE.password,
+    var json = {'email': KP.email,
+                'password': KP.password,
+                'string': KP.string,
+                'number': KP.number,
                 'user': KimiPut
                }
       , req = request(post, function(res){
@@ -189,8 +213,8 @@ describe("REST API:", function(){
       expect(res.result).toBe(true);
       expect(res.sessID).not.toBe(null);
       expect(res.userID).not.toBe(null);
-      FE.userID = res.userID;
-      FE.sessID = res.sessID;
+      KP.userID = res.userID;
+      KP.sessID = res.sessID;
       next();
     });
     req.write(JSON.stringify(json));
@@ -198,18 +222,39 @@ describe("REST API:", function(){
   });
   it("VALIDATE: should approve by user and password", function(next){
     post.path = '/rest/validate';
-    post.headers['Auth'] = FE.sessID;   
-    var json = {'email': FE.email,
-                'password': FE.password,
-                'sessID': FE.sessID
+    post.headers['Auth'] = KP.sessID;   
+    var json = {'email': KP.email,
+                'password': KP.password,
+                'sessID': KP.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
       expect(res.result).toBe(true);
-      expect(res.userID).toEqual(FE.userID);
-      expect(res.sessID).toEqual(FE.sessID);
+      expect(res.userID).toEqual(KP.userID);
+      expect(res.sessID).toEqual(KP.sessID);
       next();
     });
+    req.write(JSON.stringify(json));
+    req.end();
+  });  
+  it("ENROLL: check the e-mail and respond with strings", function(next){
+    post.path = '/rest/enroll';
+    post.headers['Auth'] = 'enroll';   
+    var json = {'operand': 'checkEmail',
+                'email': GA.email,
+                'lang': GA.lang
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          enrolls.bring(GA.email, function(e,r){
+            expect(e).toBe(null);
+//console.log(r);
+            expect(r).not.toBe(null);
+            GA.string = r.string;
+            GA.number = r.number;
+            next();
+          });
+        });
     req.write(JSON.stringify(json));
     req.end();
   });
@@ -218,6 +263,9 @@ describe("REST API:", function(){
     post.headers['Auth'] = 'createuser';   
     var json = {'email': GA.email,
                 'password': GA.password,
+                'string': GA.string,
+                'string': GA.string,
+                'number': GA.number,
                 'user': GenaAlter
                }
       , req = request(post, function(res){
@@ -241,7 +289,7 @@ describe("REST API:", function(){
   it("UPDATE User Role: add businessAdmin role to userID", function(next){
     post.path = '/rest/updateUserRole';
     post.headers['Auth'] = GA.sessID;
-    var json = {'data': {'userID': FE.userID,
+    var json = {'data': {'userID': KP.userID,
                          'userRole': ['businessAdmin']
                         },
                 'userID': GA.userID,
@@ -258,11 +306,11 @@ describe("REST API:", function(){
   it("CREATE one plan: Create one plan (object) using 'create'", function(next){
     var plan = planLCT;
     post.path = '/rest/operatePlan';
-    post.headers['Auth'] = FE.sessID;
+    post.headers['Auth'] = KP.sessID;
     var json = {'plan': plan,
                 'operand': 'create',
-                'userID': FE.userID,
-                'sessID': FE.sessID
+                'userID': KP.userID,
+                'sessID': KP.sessID
                }
       , req = request(post, function(res){
           plan.planID = res.plan.planID;
@@ -285,19 +333,19 @@ describe("REST API:", function(){
   it("CREATE loan application: from loanApp object", function(next){
     var plan = planLCT;
     post.path = '/rest/operateApplication';
-    post.headers['Auth'] = FE.sessID;
+    post.headers['Auth'] = KP.sessID;
     var json = {'operand': 'create',
                 'planID': plan.planID,
                 'type':   loanApp.type,
                 'amount': loanApp.amount,
-                'userID': FE.userID,
-                'sessID': FE.sessID
+                'userID': KP.userID,
+                'sessID': KP.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.sessID).toEqual(FE.sessID);
-          expect(res.application.userID).toEqual(FE.userID);
+          expect(res.sessID).toEqual(KP.sessID);
+          expect(res.application.userID).toEqual(KP.userID);
           expect(res.application.amount).toEqual(loanApp.amount);
           expect(res.application.type).toEqual(loanApp.type);
           expect(res.application.plan.planID).toEqual(planLCT.planID);
@@ -311,18 +359,18 @@ describe("REST API:", function(){
 
   it("CREATE collect application: from collectApp object", function(next){
     post.path = '/rest/operateApplication';
-    post.headers['Auth'] = FE.sessID;
+    post.headers['Auth'] = KP.sessID;
     var json = {'operand': 'create',
                 'type':   collectApp.type,
                 'amount': collectApp.amount,
-                'userID': FE.userID,
-                'sessID': FE.sessID
+                'userID': KP.userID,
+                'sessID': KP.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.sessID).toEqual(FE.sessID);
-          expect(res.application.userID).toEqual(FE.userID);
+          expect(res.sessID).toEqual(KP.sessID);
+          expect(res.application.userID).toEqual(KP.userID);
           expect(res.application.amount).toEqual(collectApp.amount);
           expect(res.application.type).toEqual(collectApp.type);
           
@@ -356,10 +404,10 @@ describe("REST API:", function(){
   it("Remove plan from the system", function(next){
     var plan = planLCT;
     post.path = '/rest/operatePlan?operand=remove';
-    post.headers['Auth'] = FE.sessID   
+    post.headers['Auth'] = KP.sessID   
     var json = {'planID': plan.planID,
-                'userID': FE.userID,
-                'sessID': FE.sessID
+                'userID': KP.userID,
+                'sessID': KP.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
@@ -368,14 +416,14 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-  
+ 
 /*
   it(": ", function(next){
     post.path = '/rest/';
-    post.headers['Auth'] = FE.sessID;
+    post.headers['Auth'] = KP.sessID;
     var json = {'': ,
                 '': ,  
-                'sessID': FE.sessID
+                'sessID': KP.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
@@ -388,12 +436,12 @@ describe("REST API:", function(){
 15 */
 
   it("Remove Kimi Put from the system", function(next){
-    ldap.remove(FE.email, function(e,r){
+    ldap.remove(KP.email, function(e,r){
       expect(r).toBe(true);
-      users.remove(FE.userID, function(e,r){
+      users.remove(KP.userID, function(e,r){
         expect(e).toBe(null);
         expect(r.result).toEqual({ ok: 1, n: 1 });
-        session.remove(FE.sessID, function(e,r){
+        session.remove(KP.sessID, function(e,r){
           expect(e).toBe(null);
           expect(r.result).toEqual({ ok: 1, n: 1 });
           next();
@@ -401,6 +449,7 @@ describe("REST API:", function(){
       });
     });
   });
+
   it("Remove Gena Alter from the system", function(next){
     ldap.remove(GA.email, function(e,r){
       expect(r).toBe(true);
@@ -415,6 +464,7 @@ describe("REST API:", function(){
       });
     });
   });
+
   it('closing the DB and LDAP connections', function(next){
     ldap.close();
     DB.close();

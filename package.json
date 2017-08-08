@@ -21,7 +21,7 @@
     "concat-files": "*"
   },
   "scripts": {
-    "prestart": "grunt make",
+    "prestart": "grunt keep",
     "start": "app/bin/www",
     "test": "jasmine-node app/tests/*.spec.js"
   },

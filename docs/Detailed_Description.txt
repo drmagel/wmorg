@@ -187,7 +187,7 @@ Collections (Tables):
                   account: '',
                   accountOwner: ''
                 }],
-  groupAdminUserID: ,
+  groupAdminUserID: , // 0 - initial, 1 - user has fired it's GA, 2 - GA was fired by Admin, real groupAdminUserID
   registrationDate: Date.now
 }
 
@@ -212,8 +212,8 @@ groupadmins = {
   familyName: {},
   pictureURL: linkTo(this.userID),
   country: '',
-  region: '',
-  language: '',
+  region: ['',''],
+  language: ['',''],
   members: ['','','']
 }
 
@@ -615,4 +615,23 @@ manageApplication:
     res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired
   2. Operands: 'update', 'remove'. No default values
     Format ('update' example): ({operand: 'update'}) or /rest/manageApplication?operand=update
-    Permission: ['groupAdmin','officeAdmin','globalAdmin']   
+    Permission: ['groupAdmin','officeAdmin','globalAdmin']
+
+employGroupAdmin.api.js:
+  1. Session validation:
+    res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired
+  2. Operands: 'reqruit' and 'discharge'.
+    req: {gradmins: [], sessID, userID}
+    res: {result, userInactive: [], areadyAssigned: [], groupAdmin: []} // if groupAdmin === [], then result false.
+    Permission: ['officeAdmin','globalAdmin']
+
+operateGroupAdmin:
+  1. Session validation:
+    res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired
+  2. Operands: 'assign', 'fire', 'replace'
+    req: {sessID, userID, gradmID}
+    res: {result: true}
+    res: {result: false, reason: 'role_denied'}
+  3. Operand: getAll
+    req: {sessID, userID}
+    res: {result: true, groupadmin: []}

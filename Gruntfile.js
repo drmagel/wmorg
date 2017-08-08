@@ -149,5 +149,6 @@ module.exports = function(grunt) {
   grunt.registerTask('cc:make', ['cc:statics', 'uglify']);
 //  grunt.registerTask('dev', ['watch:dev']);
   grunt.registerTask('dev', ['watch:make']);
+  grunt.registerTask('keep', ['cc:copy']);
   grunt.registerTask('make', ['cc:make']);
 }

@@ -84,7 +84,8 @@ describe("Groupadmins model", function() {
     });
   });
   it('GETLIST: should get list of documents from the collection', function(next){
-    model.getList(KukuPetAdmin.userID,{region: 1},function(e,r){
+    model.getList({userID: KukuPetAdmin.userID},{region: 1},function(e,r){
+//    model.getList(null, {userID:1, region:1}, function(e,r){
       expect(e).toBe(null);
       expect(r).toEqual(jasmine.any(Array));
 //      console.log(r);
