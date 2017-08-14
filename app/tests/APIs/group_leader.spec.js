@@ -2,15 +2,27 @@
 * Test description:
 * o Preparation:
 *   - Create 4 users, one is a GlobalAdmin
+*
 * o Test bed:
-*   - Set one of the users as GL
-*   - Chose it as GA for other 3
+*   1. operateGroupAdmin & employGroupAdmin
+*   - Reqruit one user as GL
+*   - Update GL profile from GlobalAdmin
+*   - Reqruit several users as GL
+*   - Choose it as GA for other 3
 *   - Discharge the GL user from its position
+*   - Shoose discharged GL for user
 *   - Set two users as GL
 *   - Chose them for other two. 
 *   - switch the GLs.
+*   - Discharge GLs: one and group.
+*
+*   2. operateGroup
+*   - Reqruit GL and assign it for other users
+*   - Update GL's profile
+*   - Get list of members
+*   - Discharge GL
+*
 * o Cleaning
-*   - Discharge GLs.
 *   - Remove users
 * 
 **/
@@ -28,6 +40,7 @@ var session = require('models')('sessions')
   , groupadmins = require('models')('groupadmins')
   , MongoClient = require('mongodb').MongoClient
   , mongo = require('config').mongo
+  , reason = require('config').reasons
   , DB = {};
 
 var dbURI = 'mongodb://' +
@@ -61,7 +74,8 @@ var port = require('config').server.port
 
 // Test values
 
-var KP = {
+var waitTillDone = 10
+  , KP = {
       lang: 'rus',
       email: 'kuku@v30.amdocs.com',
       password: '1234'
@@ -420,7 +434,10 @@ describe("REST API:", function(){
 //
 // Testbed - testing the Applications APIs
 //
-  it("REQRUIT - one: assign group admin privilege to Kuku Pet", function(next){
+
+//*****************************************************************
+// 1. EmployGroupAdmin & operateGroupAdmin 
+  it("REQRUIT - one: assign group admin privilege to Kimi Put", function(next){
     post.path = '/rest/employGroupAdmin';
     post.headers['Auth'] = GA.sessID;   
     var json = {'userID': GA.userID,
@@ -437,6 +454,36 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
+  it("UPDATE PROFILE: update Kimi Put name - set all supported languages", function(next){
+    post.path = '/rest/employGroupAdmin';
+    post.headers['Auth'] = GA.sessID;   
+    var json = {'userID': GA.userID,
+                'sessID': GA.sessID,
+                'operand': 'updateProfile',
+                'gradmID': KP.userID,
+                'data': { 'firstName':  {'eng':'Kimi', 'heb':'קימי', 'rus':'Кими'},
+                          'familyName': {'eng':'Put', 'heb':'פוט', 'rus':'Пут'}
+                        }
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          setTimeout(function(){next()}, waitTillDone); // Wait for update 
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("UPDATE PROFILE - test results: Print Kimi Put", function(next){
+    groupadmins.get(KP.userID,{},function(e,r){ // Check the result
+      expect(e).toBe(null);
+//console.log(r);
+      expect(r.userID).toEqual(KP.userID);
+      expect(r.firstName).toEqual({ eng: 'Kimi', heb: 'קימי', rus: 'Кими' });
+      expect(r.familyName).toEqual({ eng: 'Put', heb: 'פוט', rus: 'Пут' });
+      next();
+    });
+  });
+  
   it("REQRUIT - many: assign group admin privilege to Gosha Lummer and Moti Hammer", function(next){
     post.path = '/rest/employGroupAdmin';
     post.headers['Auth'] = GA.sessID;   
@@ -506,7 +553,7 @@ describe("REST API:", function(){
     req.end();
   });
 
-  it("ASSIGN KP: assign Kuku Pet as a group admin for Moti Hammer", function(next){
+  it("ASSIGN KP: assign Kimi Put as a group admin for Moti Hammer", function(next){
     post.path = '/rest/operateGroupAdmin';
     post.headers['Auth'] = MH.sessID;   
     var json = {'userID': MH.userID,
@@ -517,12 +564,12 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          next();
+          setTimeout(function(){next()}, waitTillDone); // Wait for result
         });
     req.write(JSON.stringify(json));
     req.end();
   });
-  it("ASSIGN KP - test results: Print Kuku Pet and Moti Hammer", function(next){
+  it("ASSIGN KP - test results: Print Kimi Put and Moti Hammer", function(next){
     users.get(MH.userID,{},function(e,r){
       expect(e).toBe(null);
 //console.log(r);
@@ -536,7 +583,7 @@ describe("REST API:", function(){
     next();
   });
 
-  it("FIRE KP: fire Kuku Pet as a group admin for Moti Hammer", function(next){
+  it("FIRE KP: fire Kimi Put as a group admin for Moti Hammer", function(next){
     post.path = '/rest/operateGroupAdmin';
     post.headers['Auth'] = MH.sessID;   
     var json = {'userID': MH.userID,
@@ -547,12 +594,12 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          next();
+          setTimeout(function(){next()}, waitTillDone); // Wait for result
         });
     req.write(JSON.stringify(json));
     req.end();
   });
-  it("FIRE KP - test results: Print Kuku Pet and Moti Hammer", function(next){
+  it("FIRE KP - test results: Print Kimi Put and Moti Hammer", function(next){
     users.get(MH.userID,{},function(e,r){
       expect(e).toBe(null);
 //console.log(r);
@@ -565,7 +612,7 @@ describe("REST API:", function(){
     });
     next();
   });
-  it("ASSIGN KP: assign Kuku Pet as a group admin for Moti Hammer", function(next){
+  it("ASSIGN KP: assign Kimi Put as a group admin for Moti Hammer", function(next){
     post.path = '/rest/operateGroupAdmin';
     post.headers['Auth'] = MH.sessID;   
     var json = {'userID': MH.userID,
@@ -581,7 +628,7 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-  it("REPLACE KP: replace Kuku Pet by Gosha Lummer as a group admin for Moti Hammer", function(next){
+  it("REPLACE KP: replace Kimi Put by Gosha Lummer as a group admin for Moti Hammer", function(next){
     post.path = '/rest/operateGroupAdmin';
     post.headers['Auth'] = MH.sessID;   
     var json = {'userID': MH.userID,
@@ -592,16 +639,16 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          next();
+          setTimeout(function(){next()}, waitTillDone); // Wait for result
         });
     req.write(JSON.stringify(json));
     req.end();
   });
-  it("REPLACE KP - test results: Print Kuku Pet, Gosha Lummer and Moti Hammer", function(next){
+  it("REPLACE KP - test results: Print Kimi Put, Gosha Lummer and Moti Hammer", function(next){
     users.get(MH.userID,{},function(e,r){
       expect(e).toBe(null);
 //console.log(r);
-      expect(r.groupAdminUserID).toEqual(GL.userID);
+      expect(r.groupAdminUserID).toEqual(GL.userID);  
     });
     groupadmins.get(KP.userID,{},function(e,r){
       expect(e).toBe(null);
@@ -613,13 +660,13 @@ describe("REST API:", function(){
 //console.log(r);
       expect(r.members.indexOf(MH.userID)).toBeGreaterThan(-1);
     });
-    setTimeout(function(){next()}, 100);
+    next();
   });
 
   
   
 /*
-  it("DEBUG: Print Kuku Pet", function(next){
+  it("DEBUG: Print Kimi Put", function(next){
     users.get(KP.userID,{},function(e,r){
       expect(e).toBe(null);
       console.log(r);
@@ -634,7 +681,7 @@ describe("REST API:", function(){
 
 
 
-  it("DISCHARGE - many: remove group admin privilege from Kuku Pet and Gosha Lummer", function(next){
+  it("DISCHARGE - many: remove group admin privilege from Kimi Put and Gosha Lummer", function(next){
     post.path = '/rest/employGroupAdmin';
     post.headers['Auth'] = GA.sessID;   
     var json = {'userID': GA.userID,
@@ -645,12 +692,12 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          next();
+          setTimeout(function(){next()}, waitTillDone * 3); // Wait for result
         });
     req.write(JSON.stringify(json));
     req.end();
   });
-  it("DISCHARGE - many: Moti Hammer get '2' as a groupAdminUserID", function(next){
+  it("DISCHARGE - many - test result: Moti Hammer get '2' as a groupAdminUserID", function(next){
     users.get(MH.userID,{},function(e,r){
       expect(e).toBe(null);
 //console.log(r);
@@ -658,7 +705,7 @@ describe("REST API:", function(){
       next();
     });
   });
-  it("ASSIGN KP: assign Kuku Pet, which is not admin, as a group admin for Moti Hammer", function(next){
+  it("ASSIGN KP: assign Kimi Put, which is not admin, as a group admin for Moti Hammer", function(next){
     post.path = '/rest/operateGroupAdmin';
     post.headers['Auth'] = MH.sessID;   
     var json = {'userID': MH.userID,
@@ -669,13 +716,124 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(false);
-          expect(res.reason).toEqual('role_denied');
+          expect(res.reason).toEqual(reason.roleError);
           next();
         });
     req.write(JSON.stringify(json));
     req.end();
   });
- 
+//*****************************************************************
+
+//*****************************************************************
+// 2. operateGroup
+  it("REQRUIT - one: assign group admin privilege to Gosha Lummer", function(next){
+    post.path = '/rest/employGroupAdmin';
+    post.headers['Auth'] = GA.sessID;   
+    var json = {'userID': GA.userID,
+                'sessID': GA.sessID,
+                'operand': 'reqruit',
+                'gradmID': GL.userID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.groupAdmin[0]).toEqual(GL.userID);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("ASSIGN GL: assign Gosha Lummer as a group admin for Moti Hammer", function(next){
+    post.path = '/rest/operateGroupAdmin';
+    post.headers['Auth'] = MH.sessID;   
+    var json = {'userID': MH.userID,
+                'sessID': MH.sessID,
+                'operand': 'assign',
+                'gradmID': GL.userID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("ASSIGN GL: assign Gosha Lummer as a group admin for Kimi Put", function(next){
+    post.path = '/rest/operateGroupAdmin';
+    post.headers['Auth'] = KP.sessID;   
+    var json = {'userID': KP.userID,
+                'sessID': KP.sessID,
+                'operand': 'assign',
+                'gradmID': GL.userID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("OPERATE GL: update Gosha Lummer profile", function(next){
+    post.path = '/rest/operateGroup';
+    post.headers['Auth'] = GL.sessID;   
+    var json = {'userID': GL.userID,
+                'sessID': GL.sessID,
+                'operand': 'updateProfile',
+                'data': { 'firstName': {'eng':'Gosha', 'rus':'Гоша', 'heb':'גושה'},
+                          'familyName': {'eng':'Lummer', 'rus':'Луммер', 'heb':'לומר'},
+                          'region': ['telaviv','kfarsaba','roshain'],
+                          'language': ['heb','eng','rus']
+                        }
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.groupadmin.region.length).toEqual(3);
+          expect(res.groupadmin.language.length).toEqual(3);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("OPERATE GL: get list of members", function(next){
+    post.path = '/rest/operateGroup';
+    post.headers['Auth'] = GL.sessID;   
+    var json = {'userID': GL.userID,
+                'sessID': GL.sessID,
+                'operand': 'listGroup'
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.members.length).toEqual(2);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+  it("DISCHARGE - one: remove group admin privilege from Gosha Lummer", function(next){
+    post.path = '/rest/employGroupAdmin';
+    post.headers['Auth'] = GA.sessID;   
+    var json = {'userID': GA.userID,
+                'sessID': GA.sessID,
+                'operand': 'discharge',
+                'gradmID': GL.userID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+//*****************************************************************
+
+  
 /* 15
   it(": ", function(next){
     post.path = '/rest/';

@@ -166,7 +166,7 @@ Collections (Tables):
 
   firstName: '',
   familyName: '',
-  photoURL: linkTo(this.userID),
+  pictureURL: linkTo(this.userID),
   phone: '',
   email: '',
   currency: '',
@@ -211,10 +211,12 @@ groupadmins = {
   firstName: {},
   familyName: {},
   pictureURL: linkTo(this.userID),
+  phone: '',
+  email: '',
   country: '',
-  region: ['',''],
-  language: ['',''],
-  members: ['','','']
+  region: [],
+  language: [],
+  members: []
 }
 
 - Payments:
@@ -617,7 +619,7 @@ manageApplication:
     Format ('update' example): ({operand: 'update'}) or /rest/manageApplication?operand=update
     Permission: ['groupAdmin','officeAdmin','globalAdmin']
 
-employGroupAdmin.api.js:
+employGroupAdmin:
   1. Session validation:
     res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired
   2. Operands: 'reqruit' and 'discharge'.
