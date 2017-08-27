@@ -1,15 +1,45 @@
 /**
 * Test description:
 * o Preparation:
-*   - Create 2 users, one is a GlobalAdmin, second one is BusinessAdmin
+*   - Create 4 users, one is a GlobalAdmin, second one is BusinessAdmin
 *   - Create a plan
 * o Test bed:
-*   - Create 2 applications: LOAN and COLLECT
-*   - Create 2 pendants
-*   - Reject 1 offer (pendant)
-*   - Accept 1 offer (pendant)
-*   - Create transaction from the pendant
-*   - Accept transaction
+*   - Greate 1 LOAN application
+*   - Create 2 COLLECT applications
+
+****** Pendants ******
+*   - Create an offer (pendant) from COLLECT to LOAN
+*   - Get user's orrers.
+*   - Get assigned offers.
+*   - Decline the offer.
+*   - Remove the  offer.
+*   - Create an offer (pendant) from COLLECT to LOAN
+*   - Accept the offer
+*   - Cancel the offer
+*   - Create an offer (pendant) from LOAN to COLLECT
+*   - Get assigned offers.
+*   - Decline the offer.
+*   - Remove the offer.
+*   - Create an offer (pendant) from LOAN to COLLECT
+*   - Get user's offers.
+*   - Cancel the offer.
+*   - Create an offer (pendant) from LOAN to COLLECT
+*   - Accept the offer
+
+***** Transactions ******
+*   - Create transaction.
+*   - Close the transaction && create the asset value.
+*   - Cancel the LOAN && create and ASSET record.
+*   - Create an offer from LOAN to COLLECT
+*   - Decline the offer
+*   - Create an offer from LOAN to COLLECT
+*   - Accept the offer && create transaction
+*   - Admin (Office, Global) cancel the transaction
+*   - LOAN offers 2 COLLECTS
+*   - Accept offers and create transactions
+*   - Close transactions and create ASSETs
+*   - Create COLLECT from ASSETs
+*   - 
 * o Cleaning
 *   - Remove applications
 *   - Remove users
@@ -31,6 +61,7 @@ var session = require('models')('sessions')
   , users = require('models')('users')
   , applications = require('models')('applications')
   , enrolls = require('models')('enrolls')
+  , pendants = require('models')('pendants')
   , MongoClient = require('mongodb').MongoClient
   , mongo = require('config').mongo
   , DB = {};
@@ -61,7 +92,6 @@ var port = require('config').server.port
         res.on('end', function(){fn(JSON.parse(str))});
       });
     }
-  , createdPlans = []
 ;
 
 
@@ -131,7 +161,76 @@ var KP = {
                     }]
       
     }
+  
+  , GL = {
+      lang: 'heb',
+      email: 'lglg@v30.amdocs.com',
+      password: '1234'
+    }
+
+  , GoshaLummer = {
+      firstName:  'גושה',
+      familyName: 'לומר',
+      phone: '545433688',
+      email: 'lglg@v30.amdocs.com',
+      currency: 'ils',
+      country: 'israel',
+      city: 'roshain',
+      language: 'heb',
+      bankAccount: [{ name: 'bankleumileisraelltd',
+                      site: '910',
+                      account: '234243/88',
+                      accountOwner: 'גושה לומר'
+                    },
+                    {name: 'bankhapoalimltd',
+                      site: '40',
+                      account: '345612443',
+                      accountOwner: 'גושה לומר'
+                    },
+                    {name: 'israeldiscountbankltd',
+                      site: '34',
+                      account: '34-543232',
+                      accountOwner: 'גושה לומר'
+                    }]
+      
+    }
+    
+  , MH = {
+      lang: 'heb',
+      email: 'moti@v30.amdocs.com',
+      password: '1234'
+    }
+
+  , MotiHammer = {
+      firstName:  'מוטי',
+      familyName: 'פטיש',
+      phone: '545433989',
+      email: 'moti@v30.amdocs.com',
+      currency: 'ils',
+      country: 'israel',
+      city: 'ashdod',
+      language: 'heb',
+      bankAccount: [{ name: 'bankleumileisraelltd',
+                      site: '934',
+                      account: '234978/88',
+                      accountOwner: 'מוטי פטיש'
+                    },
+                    {name: 'bankhapoalimltd',
+                      site: '456',
+                      account: '345612989',
+                      accountOwner: 'מוטי פטיש'
+                    },
+                    {name: 'israeldiscountbankltd',
+                      site: '35',
+                      account: '34-543567',
+                      accountOwner: 'מוטי פטיש'
+                    }]
+      
+    }
+    
+  , testUsers = []
 ;
+
 
 function getTime(num){
   var d = new Date()
@@ -175,107 +274,53 @@ describe("REST API:", function(){
       session.setDB(DB);
       applications.setDB(DB);
       enrolls.setDB(DB);
+      pendants.setDB(DB);
       next();
     });
   });
-  it("ENROLL: check the e-mail and respond with strings", function(next){
+
+//GA - Gena Alter, the Global Admin
+  it("ENROLL GA: check the e-mail and respond with strings", function(next){
     post.path = '/rest/enroll';
     post.headers['Auth'] = 'enroll';   
-    var json = {'operand': 'checkEmail',
-                'email': KP.email,
-                'lang': KP.lang
+    var U = {S: GA}
+      , json = {'operand': 'checkEmail',
+                'email': U.S.email,
+                'lang': U.S.lang
                }
       , req = request(post, function(res){
 //console.log(res);
-          enrolls.bring(KP.email, function(e,r){
+          enrolls.bring(U.S.email, function(e,r){
             expect(e).toBe(null);
 //console.log(r);
             expect(r).not.toBe(null);
-            KP.string = r.string;
-            KP.number = r.number;
+            U.S.string = r.string;
+            U.S.number = r.number;
             next();
           });
         });
     req.write(JSON.stringify(json));
     req.end();
   });
-  it("createUser: Create new user Kimi Put", function(next){
+  it("createUser GA: Create new user Gena Alter, the Global Admin", function(next){
     post.path = '/rest/createUser';
     post.headers['Auth'] = 'createuser';   
-    var json = {'email': KP.email,
-                'password': KP.password,
-                'string': KP.string,
-                'number': KP.number,
-                'user': KimiPut
+    var U = {S: GA, ser: GenaAlter}
+      , json = {'email': U.S.email,
+                'password': U.S.password,
+                'string': U.S.string,
+                'number': U.S.number,
+                'user': U.ser
                }
       , req = request(post, function(res){
 //console.log(res);
       expect(res.result).toBe(true);
       expect(res.sessID).not.toBe(null);
       expect(res.userID).not.toBe(null);
-      KP.userID = res.userID;
-      KP.sessID = res.sessID;
-      next();
-    });
-    req.write(JSON.stringify(json));
-    req.end();
-  });
-  it("VALIDATE: should approve by user and password", function(next){
-    post.path = '/rest/validate';
-    post.headers['Auth'] = KP.sessID;   
-    var json = {'email': KP.email,
-                'password': KP.password,
-                'sessID': KP.sessID
-               }
-      , req = request(post, function(res){
-//console.log(res);
-      expect(res.result).toBe(true);
-      expect(res.userID).toEqual(KP.userID);
-      expect(res.sessID).toEqual(KP.sessID);
-      next();
-    });
-    req.write(JSON.stringify(json));
-    req.end();
-  });  
-  it("ENROLL: check the e-mail and respond with strings", function(next){
-    post.path = '/rest/enroll';
-    post.headers['Auth'] = 'enroll';   
-    var json = {'operand': 'checkEmail',
-                'email': GA.email,
-                'lang': GA.lang
-               }
-      , req = request(post, function(res){
-//console.log(res);
-          enrolls.bring(GA.email, function(e,r){
-            expect(e).toBe(null);
-//console.log(r);
-            expect(r).not.toBe(null);
-            GA.string = r.string;
-            GA.number = r.number;
-            next();
-          });
-        });
-    req.write(JSON.stringify(json));
-    req.end();
-  });
-  it("createUser: Create Gena Alter", function(next){
-    post.path = '/rest/createUser';
-    post.headers['Auth'] = 'createuser';   
-    var json = {'email': GA.email,
-                'password': GA.password,
-                'string': GA.string,
-                'string': GA.string,
-                'number': GA.number,
-                'user': GenaAlter
-               }
-      , req = request(post, function(res){
-//console.log(res);
-      expect(res.result).toBe(true);
-      expect(res.sessID).not.toBe(null);
-      expect(res.userID).not.toBe(null);
-      GA.userID = res.userID;
-      GA.sessID = res.sessID;
-      // manually make it Global Admin
+      U.S.userID = res.userID;
+      U.S.sessID = res.sessID;
+      testUsers.push(U.S);
+      // manually assign Gena Alter (GA) the globalAdmin role
       users.updateUserRole(GA.userID, ['globalAdmin'], function(e,r){
         expect(e).toBe(null);
         expect(r.result).toEqual({ ok: 1, nModified: 1, n: 1 });
@@ -285,8 +330,149 @@ describe("REST API:", function(){
     });
     req.write(JSON.stringify(json));
     req.end();
+  }); // Global Admin
+
+//KP - Kimi Put
+  it("ENROLL KP: check the e-mail and respond with strings", function(next){
+    post.path = '/rest/enroll';
+    post.headers['Auth'] = 'enroll';   
+    var U = {S: KP}
+      , json = {'operand': 'checkEmail',
+                'email': U.S.email,
+                'lang': U.S.lang
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          enrolls.bring(U.S.email, function(e,r){
+            expect(e).toBe(null);
+//console.log(r);
+            expect(r).not.toBe(null);
+            U.S.string = r.string;
+            U.S.number = r.number;
+            next();
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();
   });
-  it("UPDATE User Role: add businessAdmin role to userID", function(next){
+  it("createUser KP: Create new user Kimi Put", function(next){
+    post.path = '/rest/createUser';
+    post.headers['Auth'] = 'createuser';   
+    var U = {S: KP, ser: KimiPut}
+      , json = {'email': U.S.email,
+                'password': U.S.password,
+                'string': U.S.string,
+                'number': U.S.number,
+                'user': U.ser
+               }
+      , req = request(post, function(res){
+//console.log(res);
+      expect(res.result).toBe(true);
+      expect(res.sessID).not.toBe(null);
+      expect(res.userID).not.toBe(null);
+      U.S.userID = res.userID;
+      U.S.sessID = res.sessID;
+      testUsers.push(U.S);
+      next();
+    });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+// GL - Gosha Lummer
+  it("ENROLL GL: check the e-mail and respond with strings", function(next){
+    post.path = '/rest/enroll';
+    post.headers['Auth'] = 'enroll';   
+    var U = {S: GL}
+      , json = {'operand': 'checkEmail',
+                'email': U.S.email,
+                'lang': U.S.lang
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          enrolls.bring(U.S.email, function(e,r){
+            expect(e).toBe(null);
+//console.log(r);
+            expect(r).not.toBe(null);
+            U.S.string = r.string;
+            U.S.number = r.number;
+            next();
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("createUser GL: Create new user Gosha Lummer", function(next){
+    post.path = '/rest/createUser';
+    post.headers['Auth'] = 'createuser';   
+    var U = {S: GL, ser: GoshaLummer}
+      , json = {'email': U.S.email,
+                'password': U.S.password,
+                'string': U.S.string,
+                'number': U.S.number,
+                'user': U.ser
+               }
+      , req = request(post, function(res){
+//console.log(res);
+      expect(res.result).toBe(true);
+      expect(res.sessID).not.toBe(null);
+      expect(res.userID).not.toBe(null);
+      U.S.userID = res.userID;
+      U.S.sessID = res.sessID;
+      testUsers.push(U.S);
+      next();
+    });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+// MH - Moti Hammer
+  it("ENROLL MH: check the e-mail and respond with strings", function(next){
+    post.path = '/rest/enroll';
+    post.headers['Auth'] = 'enroll';   
+    var U = {S: MH}
+      , json = {'operand': 'checkEmail',
+                'email': U.S.email,
+                'lang': U.S.lang
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          enrolls.bring(U.S.email, function(e,r){
+            expect(e).toBe(null);
+//console.log(r);
+            expect(r).not.toBe(null);
+            U.S.string = r.string;
+            U.S.number = r.number;
+            next();
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("createUser MH: Create new user Moti Hammer", function(next){
+    post.path = '/rest/createUser';
+    post.headers['Auth'] = 'createuser';   
+    var U = {S: MH, ser: MotiHammer}
+      , json = {'email': U.S.email,
+                'password': U.S.password,
+                'string': U.S.string,
+                'number': U.S.number,
+                'user': U.ser
+               }
+      , req = request(post, function(res){
+//console.log(res);
+      expect(res.result).toBe(true);
+      expect(res.sessID).not.toBe(null);
+      expect(res.userID).not.toBe(null);
+      U.S.userID = res.userID;
+      U.S.sessID = res.sessID;
+      testUsers.push(U.S);
+      next();
+    });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+  it("UPDATE User Role: add businessAdmin role to Kimi Put", function(next){
     post.path = '/rest/updateUserRole';
     post.headers['Auth'] = GA.sessID;
     var json = {'data': {'userID': KP.userID,
@@ -330,22 +516,23 @@ describe("REST API:", function(){
 // Testbed - testing the Applications APIs
 //
 
-  it("CREATE loan application: from loanApp object", function(next){
+// Applications
+  it("CREATE loan application: from loanApp object (Gena Alter)", function(next){
     var plan = planLCT;
     post.path = '/rest/operateApplication';
-    post.headers['Auth'] = KP.sessID;
+    post.headers['Auth'] = GA.sessID;
     var json = {'operand': 'create',
                 'planID': plan.planID,
                 'type':   loanApp.type,
                 'amount': loanApp.amount,
-                'userID': KP.userID,
-                'sessID': KP.sessID
+                'userID': GA.userID,
+                'sessID': GA.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.sessID).toEqual(KP.sessID);
-          expect(res.application.userID).toEqual(KP.userID);
+          expect(res.sessID).toEqual(GA.sessID);
+          expect(res.application.userID).toEqual(GA.userID);
           expect(res.application.amount).toEqual(loanApp.amount);
           expect(res.application.type).toEqual(loanApp.type);
           expect(res.application.plan.planID).toEqual(planLCT.planID);
@@ -356,21 +543,20 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-
-  it("CREATE collect application: from collectApp object", function(next){
+  it("CREATE collect application: from collectApp object (Moti Hammer)", function(next){
     post.path = '/rest/operateApplication';
-    post.headers['Auth'] = KP.sessID;
+    post.headers['Auth'] = MH.sessID;
     var json = {'operand': 'create',
                 'type':   collectApp.type,
                 'amount': collectApp.amount,
-                'userID': KP.userID,
-                'sessID': KP.sessID
+                'userID': MH.userID,
+                'sessID': MH.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.sessID).toEqual(KP.sessID);
-          expect(res.application.userID).toEqual(KP.userID);
+          expect(res.sessID).toEqual(MH.sessID);
+          expect(res.application.userID).toEqual(MH.userID);
           expect(res.application.amount).toEqual(collectApp.amount);
           expect(res.application.type).toEqual(collectApp.type);
           
@@ -381,8 +567,573 @@ describe("REST API:", function(){
     req.end();
   });
 
+//
+// Pendants section
+//
+
+  it("CREATE pendant Moti wants to collect from Gosha", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'create',
+                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
+                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
+                             'amount': collectApp.amount, 'type': 'collect'}],
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.pendant.length).toEqual(1);
+          MH.pendant = res.pendant[0];
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+  it("GET: getUserPendants related to Moti", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'getUserPendants',
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          var count = res.pendant.length;
+          res.pendant.forEach(function(pnd){
+//console.log(pnd);
+            expect(pnd.userID).toEqual(MH.userID);
+            expect([pnd.loanUserID, pnd.clctUserID].indexOf(MH.userID)).toBeGreaterThan(-1);
+            if(--count === 0){next()};
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();  
+  });
+  it("GET: getAssignedPendants related to Gosha", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GA.sessID;
+    var json = {'operand': 'getAssignedPendants',
+                'userID': GA.userID,
+                'sessID': GA.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          var count = res.pendant.length;
+          res.pendant.forEach(function(pnd){
+//console.log(pnd);
+            expect(pnd.userID).not.toEqual(GA.userID);
+            expect([pnd.loanUserID, pnd.clctUserID].indexOf(GA.userID)).toBeGreaterThan(-1);
+            if(--count === 0){next()};
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();  
+  });
+
+  it("DECLINE: Gosha declines Moti's pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GA.sessID;
+    var json = {'operand': 'decline',
+                'pndID': MH.pendant.pndID, // Greated by Moti, assigned to Gosha
+                'userID': GA.userID,
+                'sessID': GA.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("TEST RESULT: Gosha declines Moti's pendant", function(next){
+    var apps = [loanApp, collectApp]
+      , count = apps.length
+      ;
+    apps.forEach(function(app, index){
+      setTimeout(function(){
+        applications.get(app.appID, {}, function(e,r){
+          expect(e).toBe(null);
+          if(r.type === 'loan'){
+//console.log(r);
+            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+            expect(r.pending).toEqual(0);
+            expect(r.amount).toEqual(r.pending + r.balance);
+          };
+          if(r.type === 'collect'){
+//console.log(r);
+            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+          };
+        });
+        if(--count === 0){
+          pendants.get(MH.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            expect(p.status).toEqual('declined');
+            next();
+          });
+        };
+      }, index * 20);
+    });
+  });
+  it("REMOVE the Moyi's pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'remove',
+                'pndID': MH.pendant.pndID,
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.pndID.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
+// Check whether the pendant has been removed from the DB.
+          pendants.get(MH.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            delete MH.pendant;
+            next();
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+  it("CREATE: pendant Moti wants to collect from Gosha", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'create',
+                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
+                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
+                             'amount': collectApp.amount, 'type': 'collect'}],
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.pendant.length).toEqual(1);
+          MH.pendant = res.pendant[0];
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("TEST RESULT: CREATE pendant Moti wants to collect from Gosha", function(next){
+    var apps = [loanApp, collectApp]
+      , count = apps.length
+      ;
+    apps.forEach(function(app, index){
+      setTimeout(function(){
+        applications.get(app.appID, {}, function(e,r){
+          expect(e).toBe(null);
+          if(r.type === 'loan'){
+//console.log(r);
+// From COLLECT to LOAN: Do nothing with LOAN app.
+            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+            expect(r.pending).toEqual(0);
+            expect(r.amount).toEqual(r.balance);
+          };
+          if(r.type === 'collect'){
+//console.log(r);
+            expect(r.pendants.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
+          };
+        });
+        if(--count === 0){
+          pendants.get(MH.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            expect(p.status).toEqual('offered');
+            next();
+          });
+        };
+      }, index * 20);
+    });
+  });
+
+  it("APPROVE: Gosha approves Moti's pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GA.sessID;
+    var json = {'operand': 'approve',
+                'pndID': MH.pendant.pndID,
+                'userID': GA.userID,
+                'sessID': GA.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("TEST RESULT: Gosha approves Moti's pendant", function(next){
+    var apps = [loanApp, collectApp]
+      , count = apps.length
+      ;
+    apps.forEach(function(app, index){
+      setTimeout(function(){
+        applications.get(app.appID, {}, function(e,r){
+          expect(e).toBe(null);
+          if(r.type === 'loan'){
+// Approved COLLECT app: update LOAN app with the relevant values
+//console.log(r);
+            expect(r.pendants.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
+            expect(r.pending).toEqual(MH.pendant.amount);
+            expect(r.amount).toEqual(r.pending + r.balance);
+          };
+          if(r.type === 'collect'){
+//console.log(r);
+            expect(r.pendants.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
+          };
+        });
+        if(--count === 0){
+          pendants.get(MH.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            expect(p.status).toEqual('approved');
+            next();
+          });
+        };
+      }, index * 20);
+    });
+  });
+
+  it("CANCEL: Moti cancels his pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'cancel',
+                'pndID': [MH.pendant.pndID],
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("TEST RESULT: Moti cancels his pendant", function(next){
+    var apps = [loanApp, collectApp]
+      , count = apps.length
+      ;
+    apps.forEach(function(app, index){
+      setTimeout(function(){
+        applications.get(app.appID, {}, function(e,r){
+          expect(e).toBe(null);
+          if(r.type === 'loan'){
+//console.log(r);
+            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+            expect(r.pending).toEqual(0);
+            expect(r.amount).toEqual(r.balance);
+          };
+          if(r.type === 'collect'){
+//console.log(r);
+            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+          };
+        });
+        if(--count === 0){
+          pendants.get(MH.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            expect(p).toBe(null);
+            delete MH.pendant;
+            next();
+          });
+        };
+      }, index * 20);
+    });
+  });
+
+  it("CREATE: pendant Gosha offers to Moti", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GA.sessID;
+    var json = {'operand': 'create',
+                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
+                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
+                             'amount': collectApp.amount, 'type': 'loan'}],
+                'userID': GA.userID,
+                'sessID': GA.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.pendant.length).toEqual(1);
+          GA.pendant = res.pendant[0];
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("TEST RESULT: CREATE: pendant Gosha offers to Moti", function(next){
+    var apps = [loanApp, collectApp]
+      , count = apps.length
+      ;
+    apps.forEach(function(app, index){
+      setTimeout(function(){
+        applications.get(app.appID, {}, function(e,r){
+          expect(e).toBe(null);
+          if(r.type === 'loan'){
+//console.log(r);
+// From LOAN to COLLECT: the LOAN app is ready for transaction.
+            expect(r.pendants.indexOf(GA.pendant.pndID)).toBeGreaterThan(-1);
+            expect(r.pending).toEqual(collectApp.amount);
+            expect(r.amount).toEqual(r.balance + r.pending);
+          };
+          if(r.type === 'collect'){
+//console.log(r);
+            expect(r.pendants.indexOf(GA.pendant.pndID)).toBeGreaterThan(-1);
+          };
+        });
+        if(--count === 0){
+          pendants.get(GA.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            expect(p.status).toEqual('offered');
+            next();
+          });
+        };
+      }, index * 20);
+    });
+  });
+  it("GET: getAssignedPendants related to Moti", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'getAssignedPendants',
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          var count = res.pendant.length;
+          res.pendant.forEach(function(pnd){
+//console.log(pnd);
+            expect(pnd.userID).not.toEqual(MH.userID);
+            expect([pnd.loanUserID, pnd.clctUserID].indexOf(MH.userID)).toBeGreaterThan(-1);
+            if(--count === 0){next()};
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();  
+  });
+
+  it("DECLINE: Moti declines Gosha's pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'decline',
+                'pndID': GA.pendant.pndID, // Greated by Gosha, assigned to Moti
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("TEST RESULT: Moti declines Gosha's pendant", function(next){
+    var apps = [loanApp, collectApp]
+      , count = apps.length
+      ;
+    apps.forEach(function(app, index){
+      setTimeout(function(){
+        applications.get(app.appID, {}, function(e,r){
+          expect(e).toBe(null);
+          if(r.type === 'loan'){
+//console.log(r);
+// From LOAN to COLLECT. Update LOAN app remove all the commitments
+            expect(r.pendants.indexOf(GA.pendant.pndID)).toEqual(-1);
+            expect(r.pending).toEqual(0);
+            expect(r.amount).toEqual(r.balance);
+          };
+          if(r.type === 'collect'){
+//console.log(r);
+            expect(r.pendants.indexOf(GA.pendant.pndID)).toEqual(-1);
+          };
+        });
+        if(--count === 0){
+          pendants.get(GA.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            expect(p.status).toEqual('declined');
+            next();
+          });
+        };
+      }, index * 20);
+    });
+  });
+  it("REMOVE the Gosha's pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GA.sessID;
+    var json = {'operand': 'remove',
+                'pndID': GA.pendant.pndID,
+                'userID': GA.userID,
+                'sessID': GA.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.pndID.indexOf(GA.pendant.pndID)).toBeGreaterThan(-1);
+// Check whether the pendant has been removed from the DB.
+          pendants.get(GA.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            delete GA.pendant;
+            next();
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+  it("CREATE: pendant Gosha offers to Moti", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GA.sessID;
+    var json = {'operand': 'create',
+                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
+                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
+                             'amount': collectApp.amount, 'type': 'loan'}],
+                'userID': GA.userID,
+                'sessID': GA.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.pendant.length).toEqual(1);
+          GA.pendant = res.pendant[0];
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("GET: getUserPendants related to Gosha", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GA.sessID;
+    var json = {'operand': 'getUserPendants',
+                'userID': GA.userID,
+                'sessID': GA.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          var count = res.pendant.length;
+          res.pendant.forEach(function(pnd){
+//console.log(pnd);
+            expect(pnd.userID).toEqual(GA.userID);
+            expect([pnd.loanUserID, pnd.clctUserID].indexOf(GA.userID)).toBeGreaterThan(-1);
+            if(--count === 0){next()};
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();  
+  });
+  it("CANCEL: Gosha cancels his pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GA.sessID;
+    var json = {'operand': 'cancel',
+                'pndID': [GA.pendant.pndID],
+                'userID': GA.userID,
+                'sessID': GA.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("TEST RESULT: Gosha cancels his pendant", function(next){
+    var apps = [loanApp, collectApp]
+      , count = apps.length
+      ;
+    apps.forEach(function(app, index){
+      setTimeout(function(){
+        applications.get(app.appID, {}, function(e,r){
+          expect(e).toBe(null);
+          if(r.type === 'loan'){
+//console.log(r);
+            expect(r.pendants.indexOf(GA.pendant.pndID)).toEqual(-1);
+            expect(r.pending).toEqual(0);
+            expect(r.amount).toEqual(r.balance);
+          };
+          if(r.type === 'collect'){
+//console.log(r);
+            expect(r.pendants.indexOf(GA.pendant.pndID)).toEqual(-1);
+          };
+        });
+        if(--count === 0){
+          pendants.get(GA.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            expect(p).toBe(null);
+            delete GA.pendant;
+            next();
+          });
+        };
+      }, index * 20);
+    });
+  });
+
+  it("CREATE: pendant Gosha offers to Moti", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GA.sessID;
+    var json = {'operand': 'create',
+                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
+                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
+                             'amount': collectApp.amount, 'type': 'loan'}],
+                'userID': GA.userID,
+                'sessID': GA.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.pendant.length).toEqual(1);
+          GA.pendant = res.pendant[0];
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("APPROVE: Moti approves Gosha's pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'approve',
+                'pndID': GA.pendant.pndID,
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          pendants.get(GA.pendant.pndID, {}, function(e,p){
+            expect(e).toBe(null);
+//console.log(p);
+            expect(p.amount).toEqual(collectApp.amount);
+            expect(p.status).toEqual('approved');
+            expect(p.type).toEqual('loan');
+            next();
+          });
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
 
 
+//
+// Transactions section
+//
 
 //
 // Removing test objects from the system
@@ -435,6 +1186,7 @@ describe("REST API:", function(){
   });
 15 */
 
+/*
   it("Remove Kimi Put from the system", function(next){
     ldap.remove(KP.email, function(e,r){
       expect(r).toBe(true);
@@ -464,6 +1216,29 @@ describe("REST API:", function(){
       });
     });
   });
+*/
+
+  it("Remove test users from the system", function(next){
+    var count = testUsers.length;    
+    testUsers.forEach(function(USER, index){
+      setTimeout(function(){
+        ldap.remove(USER.email, function(e,r){
+          expect(e).toBe(undefined);
+          expect(r).toBe(true);
+          users.remove(USER.userID, function(e,r){
+            expect(e).toBe(null);
+            expect(r.result).toEqual({ ok: 1, n: 1 });
+            session.remove(USER.sessID, function(e,r){
+              expect(e).toBe(null);
+              expect(r.result).toEqual({ ok: 1, n: 1 });
+              if(--count === 0){next()};
+            }) //session.remove
+          }) //users.remove
+        })//ldap.remove
+      }, index * 100) //setTimeout
+    });//forEach
+  });
+
 
   it('closing the DB and LDAP connections', function(next){
     ldap.close();

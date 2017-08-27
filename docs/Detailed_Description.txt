@@ -350,9 +350,13 @@ appArchive = { // COLLECTs
 
 pendants = {
   pndID: ,
+  userID: , // Creator 
   loanAppID: ,
+  loanUserID: ,
   clctAppID: ,
+  clctUserID: ,
   amount: ,
+  type: , // 'loan' or 'collect'
   status: , // 'offered' or 'approved'
   overdueDate: date,
   creationDate: date
@@ -364,6 +368,7 @@ transactions = {
   loanAppID: ,
   ctclUserID: ,
   clctAppID: ,
+  bankAccount: {} // provided by ctclUserID
   amount: ,
   status: , // 'active', 'completed' or 'canceled'
   messages: [{from: '', text: '', creationDate: date}, {}],
@@ -519,69 +524,101 @@ getPlans:
 operatePendand:
   1. Session validation:
     res: {result: false, reason: ''} // Possible reasons: invalid_sessid, sessid_expired
-  2. Operands: 'create', 'update', 'remove', 'get', 'getby', 'fliphstatus', 'cancel' . No default values
+  2. Operands: 'create', 'remove', 'get', 'getby', 'approve', 'decline', 'cancel', 'getUserPendants', 'getAssignedPendants' . No default values
     Format ('create' example): ({operand: 'create'}) or /rest/operatePendant?operand=create
     Permission: any
-    Pendant format: { pndID: ,
-                      loanAppID: ,
+    Pendant format: { loanAppID: ,
+                      loanUserID: ,
                       clctAppID: ,
+                      clctUserID: ,
                       amount: ,
-                      status: , // 'offered' or 'approved'
-                      overdueDate: date
+                      type: // 'loan' or 'collect'
                     }
-    Request format for create and update:
-      req: {pendant, operand, sessID, userID}
-      headers: Auth sessID
-    Response format for create and update:
-      res: {result: true, pendant: {pndID: ,,,}, sessID}
-      res: {result: false, reason, sessID}
-    Tasks:
-      Obtain pndID
-      loanAppID => update Balance and add to Pendans[]
-      clctAppID => add to Pendans[]
+    - Request format for create:
+        req: {pendant, operand, sessID, userID}
+        headers: Auth sessID
+      Response format for create:
+        res: {result: true, pendant: {pndID: ,,,}, sessID}
+        res: {result: false, reason, sessID}
+      Tasks:
+        Obtain pndID
+        loanAppID => update Balance and add to Pendans[], if type is 'loan'
+        clctAppID => add to Pendans[]
+        set values for:
+          creationDate
+          overdueDate
+          userID
+      
 
-          Request format for remove: // Removes the pendant while creating transaction. - MUST be done from transaction API
-            req: { pndID, operand, sessID, userID} // pndID is a number of list of numbers
-            headers: Auth sessID
-          Response format for remove:
-            res: {result: true, pndID: [], sessID}
-            res: {result: false, reason, sessID}
-          Tasks:
-            loanAppID => remove from Pendans[]
-            clctAppID => remove from Pendans[]
-            Remove the pendant by pndID
+    - Request format for remove: // Removes only declined pendants owned by user
+        req: { pndID, operand, sessID, userID} // pndID is a number of list of numbers
+        headers: Auth sessID
+      Response format for remove:
+        res: {result: true, pndID: [...], sessID}
+        res: {result: false, pndID: [], sessID}
+      Tasks:
+        Remove the pendant by pndID
 
-    Request format for cancel: // Cancel or reject the pendant and set all the applications values back.
-      req: { pndID, operand, sessID, userID} // pndID is a number of list of numbers
-      headers: Auth sessID
-    Response format for cancel:
-      res: {result: true, pndID: [], sessID}
-      res: {result: false, reason, sessID}
-    Tasks:
-      loanAppID => remove from Pendans[], update the Balance.
-      clctAppID => remove from Pendans[]
-      Remove the pendant by pndID
+    - Request format for cancel: // Cancel pendant owned by user and set all the applications values back.
+        req: { pndID, operand, sessID, userID} // pndID is a number of list of numbers
+        headers: Auth sessID
+      Response format for cancel:
+        res: {result: true, pndID: [...], sessID}
+        res: {result: false, pndID: [], sessID}
+      Tasks:
+        loanAppID => remove from Pendans[], update the Balance.
+        clctAppID => remove from Pendans[]
+        Remove the pendant by pndID
+
+    - Request format for approve: // Approve the pendant (offer).
+        req: { pndID, operand, sessID, userID} // pndID is a number of list of numbers
+        headers: Auth sessID
+      Response format for approve:
+        res: {result: true, pndID: [...], sessID}
+        res: {result: false, pndID: [], sessID}
+      Tasks:
+        loanAppID => update Balance and add to Pendans[], if type is 'collect'.
+        Update the pendant status by pndID
+
+    - Request format for decline: // Decline the pendant (offer).
+        req: { pndID, operand, sessID, userID} // pndID is a number of list of numbers
+        headers: Auth sessID
+      Response format for approve:
+        res: {result: true, pndID: [...], sessID}
+        res: {result: false, pndID: [], sessID}
+      Tasks:
+        loanAppID => remove from Pendans[] and update the Balance if type is 'loan'.
+        clctAppID => remove from Pendans[]
+        Update the pendant status by pndID
       
-    Request format for get:
-      req: { pndID, filter: {}, operand, sessID, userID} // filter is optional
-      headers: Auth sessID    
-    Response format for get:
-      res: {result: true, pndID, pendant: {}, sessID}
-      res: {result: false, reason, sessID}
+    - Request format for getUserPendants: // Returns Array of pendants owned by user.
+        req: {operand, sessID, userID}
+        headers: Auth sessID    
+      Response format for getUserPendants:
+        res: {result: true, pendant: [{},{}], sessID}
+        res: {result: false, pendant: [], sessID}
+
+    - Request format for getAssignedPendants: // Returns Array of pendants assigned to user by others
+        req: {operand, sessID, userID}
+        headers: Auth sessID    
+      Response format for getAssignedPendants:
+        res: {result: true, pendant: [{},{}], sessID}
+        res: {result: false, pendant: [], sessID}
       
-    Request format for getby:
-      req: { data: {}, filter: {}, operand, sessID, userID} // filter is optional
-      headers: Auth sessID    
-    Response format for getby:
-      res: {result: true, pndID: [], pendant: [{}], sessID}
-      res: {result: false, reason, sessID}
+    - Request format for get: // Returns only one pendant with some filtered values
+        req: { pndID, filter: {}, operand, sessID, userID} // filter is optional
+        headers: Auth sessID    
+      Response format for get:
+        res: {result: true, pndID, pendant: {}, sessID}
+        res: {result: false, reason, sessID}
+        
+    - Request format for getby: // Returns Array of pendants selected by query with filtered values.
+        req: { data: {}, filter: {}, operand, sessID, userID} // filter is optional
+        headers: Auth sessID    
+      Response format for getby:
+        res: {result: true, pndID: [], pendant: [{}], sessID}
+        res: {result: false, reason, sessID}
       
-    Request format for flipstatus: // flip status between 'offered' and 'approved'
-      req: { pndID, operand, sessID, userID}
-      headers: Auth sessID    
-    Response format for flipstatus:
-      res: {result: true, pndID, status, sessID}
-      res: {result: false, reason, sessID}
 
 operateApplication:
   1. Session validation:

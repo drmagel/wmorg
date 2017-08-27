@@ -70,5 +70,6 @@ Thumbs.db
 !/app/fe/bower_components/**/*.min.css
 
 /node_modules/
+/node_modules*/
 **/Archive/**
 

@@ -75,7 +75,7 @@ describe("REST API:", function(){
       setTimeout(function(){
         users.getAllUsers({email: {$eq:USER.email}},{userID:1},function(e,lst){
           expect(e).toBe(null);
-  //console.log(lst);
+//console.log(lst);
           var cnt = lst.length;
           if(cnt){          
             lst.forEach(function(el){
