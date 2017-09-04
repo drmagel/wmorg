@@ -305,6 +305,7 @@ applications = { // COLLECTs
   userID: ,
   assetAppID: , //Optional, only if ASSET was created
   amount: ,
+  balance: ,
   pendants: [pndID, pndID], // only during the negotiation process. Otherwise pendants: [],
   transactions: [{transID, amount, status},{}], 
   type: 'collect',
@@ -325,6 +326,7 @@ appArchive = { // LOANs
   },
   transactions: [transID, transID],
   type: 'loan',
+  status: completed|canceled
   releaseDate: date
   creationDate: date
 }
@@ -345,6 +347,7 @@ appArchive = { // COLLECTs
   amount: ,
   transactions: [transID, transID],
   type: 'collect',
+  status: completed|canceled
   creationDate: date
 }
 
@@ -368,10 +371,10 @@ transactions = {
   loanAppID: ,
   ctclUserID: ,
   clctAppID: ,
-  bankAccount: {} // provided by ctclUserID
+  payMeans: {} // provided by ctclUserID
   amount: ,
   status: , // 'active', 'completed' or 'canceled'
-  messages: [{from: '', text: '', creationDate: date}, {}],
+  messages: [{from: '', text: '', attachment: [], creationDate: date}, {}],
   creationDate: date,
   overdueDate: date,
   commitedDate: date

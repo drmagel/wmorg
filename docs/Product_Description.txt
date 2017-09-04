@@ -30,7 +30,7 @@ Modules:
 
 - Transaction care
   o Dialog between loaner and Collecter
-  o Transaction status (agreement, paiment, approval && closing) with appropriate correspondence
+  o Transaction status (agreement, payment, approval && closing) with appropriate correspondence
 
 - Annual membership - 10% from last year revenue + receipt by e-mail after verification.
 - Tax book creation - PDF with all monthly and annual receipts.
@@ -197,18 +197,26 @@ Modules description:
     
     
     [LOAN]
-    Amount:   300.00  | 300.00 | 300.00 | 300.00 | 300.00 | 300.0
-    Asset:      0.00  |   0.00 |   0.00 |   0.00 |   0.00 | 100.0
-    Balance:  300.00  | 250.00 | 300.00 | 200.00 | 200.00 | 200.0
-    Pending:  0.00    | 50.00  | 0.00   | 100.00 | 100.00 |  0.00
-              Initial | Offer  | Loan   | Offer  | Loan   | Transaction
-                      |to loan |rejected|to loan |accepted| (payment) closed.
+    Amount:   300.00  | 300.00 | 300.00 | 300.00 | 300.00 | 300.00      | 300.00
+    Asset:      0.00  |   0.00 |   0.00 |   0.00 |   0.00 |   0.00      | 100.00
+    Balance:  300.00  | 250.00 | 300.00 | 200.00 | 200.00 | 200.00      | 200.00
+    Pending:    0.00  |  50.00 |   0.00 | 100.00 | 100.00 | 100.00      |   0.00
+              Initial | Offer  | Loan   | Offer  | Loan   | Transaction | Transaction
+                      |to loan |rejected|to loan |accepted| (payment)   | (payment)
+                                                            created.    | closed
+
+    [COLLECT]
+    Amount:   300.00  | 300.00 | 300.00 | 300.00 | 300.00 | 300.00      | 300.00
+    Balance:  300.00  | 300.00 | 300.00 | 300.00 | 300.00 | 200.00      | 200.00
+              Initial | Offer  | Loan   | Offer  | Loan   | Transaction | Transaction
+                      |to loan |rejected|to loan |accepted| (payment)   | (payment)
+                                                            created.    | closed
 
   o Collect Negotiation process:
-    1. Create the collect amount from different LOAN applications.
+    1. Create the collect amount from different ASSET applications.
     2. Send some offers to the loaners for approval. The requested amount maybe greater than the collect amount.
     3. Create transactions from the approved offers. The tranzactions must be equal to the collect amount.
-       The other offers will be released and the Pendants will be returned to their Ballances
+       The other offers will be released and the Pendants will be returned to their Balances
     
           
           Available  

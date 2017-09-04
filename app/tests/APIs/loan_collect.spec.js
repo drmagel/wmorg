@@ -60,8 +60,11 @@ ldap.init(ldapClient);
 var session = require('models')('sessions')
   , users = require('models')('users')
   , applications = require('models')('applications')
+  , apparchive = require('models')('apparchive')
   , enrolls = require('models')('enrolls')
   , pendants = require('models')('pendants')
+  , transactions = require('models')('transactions')
+  , transarchive = require('models')('transarchive')
   , MongoClient = require('mongodb').MongoClient
   , mongo = require('config').mongo
   , DB = {};
@@ -272,9 +275,12 @@ describe("REST API:", function(){
       DB = db;   // Setting the real DB
       users.setDB(DB);
       session.setDB(DB);
-      applications.setDB(DB);
       enrolls.setDB(DB);
       pendants.setDB(DB);
+      applications.setDB(DB);
+      apparchive.setDB(DB);
+      transactions.setDB(DB);
+      transarchive.setDB(DB);
       next();
     });
   });
@@ -520,19 +526,19 @@ describe("REST API:", function(){
   it("CREATE loan application: from loanApp object (Gena Alter)", function(next){
     var plan = planLCT;
     post.path = '/rest/operateApplication';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = GL.sessID;
     var json = {'operand': 'create',
                 'planID': plan.planID,
                 'type':   loanApp.type,
                 'amount': loanApp.amount,
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'userID': GL.userID,
+                'sessID': GL.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.sessID).toEqual(GA.sessID);
-          expect(res.application.userID).toEqual(GA.userID);
+          expect(res.sessID).toEqual(GL.sessID);
+          expect(res.application.userID).toEqual(GL.userID);
           expect(res.application.amount).toEqual(loanApp.amount);
           expect(res.application.type).toEqual(loanApp.type);
           expect(res.application.plan.planID).toEqual(planLCT.planID);
@@ -575,23 +581,23 @@ describe("REST API:", function(){
     post.path = '/rest/operatePendant';
     post.headers['Auth'] = MH.sessID;
     var json = {'operand': 'create',
-                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
-                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
-                             'amount': collectApp.amount, 'type': 'collect'}],
+                'pendant': {'loanAppID': loanApp.appID,
+                            'clctAppID': collectApp.appID,
+                            'amount': collectApp.amount, 'type': 'collect'},
                 'userID': MH.userID,
                 'sessID': MH.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.pendant.length).toEqual(1);
-          MH.pendant = res.pendant[0];
+          expect(Object.keys(res.pendant).length).toBeGreaterThan(0);
+          MH.pendant = res.pendant;
           next();
         });
     req.write(JSON.stringify(json));
     req.end();
   });
-
+  
   it("GET: getUserPendants related to Moti", function(next){
     post.path = '/rest/operatePendant';
     post.headers['Auth'] = MH.sessID;
@@ -606,6 +612,8 @@ describe("REST API:", function(){
           res.pendant.forEach(function(pnd){
 //console.log(pnd);
             expect(pnd.userID).toEqual(MH.userID);
+            expect(pnd.loanUserID).toEqual(loanApp.userID);
+            expect(pnd.clctUserID).toEqual(collectApp.userID);
             expect([pnd.loanUserID, pnd.clctUserID].indexOf(MH.userID)).toBeGreaterThan(-1);
             if(--count === 0){next()};
           });
@@ -615,10 +623,10 @@ describe("REST API:", function(){
   });
   it("GET: getAssignedPendants related to Gosha", function(next){
     post.path = '/rest/operatePendant';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = GL.sessID;
     var json = {'operand': 'getAssignedPendants',
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'userID': GL.userID,
+                'sessID': GL.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
@@ -626,8 +634,8 @@ describe("REST API:", function(){
           var count = res.pendant.length;
           res.pendant.forEach(function(pnd){
 //console.log(pnd);
-            expect(pnd.userID).not.toEqual(GA.userID);
-            expect([pnd.loanUserID, pnd.clctUserID].indexOf(GA.userID)).toBeGreaterThan(-1);
+            expect(pnd.userID).not.toEqual(GL.userID);
+            expect([pnd.loanUserID, pnd.clctUserID].indexOf(GL.userID)).toBeGreaterThan(-1);
             if(--count === 0){next()};
           });
         });
@@ -637,11 +645,11 @@ describe("REST API:", function(){
 
   it("DECLINE: Gosha declines Moti's pendant", function(next){
     post.path = '/rest/operatePendant';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = GL.sessID;
     var json = {'operand': 'decline',
                 'pndID': MH.pendant.pndID, // Greated by Moti, assigned to Gosha
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'userID': GL.userID,
+                'sessID': GL.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
@@ -652,40 +660,33 @@ describe("REST API:", function(){
     req.end();
   });
   it("TEST RESULT: Gosha declines Moti's pendant", function(next){
-    var apps = [loanApp, collectApp]
-      , count = apps.length
-      ;
-    apps.forEach(function(app, index){
-      setTimeout(function(){
-        applications.get(app.appID, {}, function(e,r){
+    applications.get(loanApp.appID, {}, function(e,r){
+      expect(e).toBe(null);
+      expect(r).not.toBe(null);
+//console.log(r);
+      expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+      expect(r.pending).toEqual(0);
+      expect(r.amount).toEqual(r.pending + r.balance);
+      applications.get(collectApp.appID, {}, function(e,r){
+        expect(e).toBe(null);
+        expect(r).not.toBe(null);
+//console.log(r);
+        expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+        pendants.get(MH.pendant.pndID, {}, function(e,p){
           expect(e).toBe(null);
-          if(r.type === 'loan'){
-//console.log(r);
-            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
-            expect(r.pending).toEqual(0);
-            expect(r.amount).toEqual(r.pending + r.balance);
-          };
-          if(r.type === 'collect'){
-//console.log(r);
-            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
-          };
-        });
-        if(--count === 0){
-          pendants.get(MH.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
 //console.log(p);
-            expect(p.status).toEqual('declined');
-            next();
-          });
-        };
-      }, index * 20);
+          expect(p).not.toBe(null);
+          expect(p.status).toEqual('declined');
+          next();
+        });
+      });
     });
   });
   it("REMOVE the Moyi's pendant", function(next){
     post.path = '/rest/operatePendant';
     post.headers['Auth'] = MH.sessID;
     var json = {'operand': 'remove',
-                'pndID': MH.pendant.pndID,
+                'pndID': [MH.pendant.pndID],
                 'userID': MH.userID,
                 'sessID': MH.sessID
                }
@@ -697,8 +698,9 @@ describe("REST API:", function(){
           pendants.get(MH.pendant.pndID, {}, function(e,p){
             expect(e).toBe(null);
 //console.log(p);
-            delete MH.pendant;
+            expect(p).toBe(null);
             next();
+            delete MH.pendant;
           });
         });
     req.write(JSON.stringify(json));
@@ -709,61 +711,54 @@ describe("REST API:", function(){
     post.path = '/rest/operatePendant';
     post.headers['Auth'] = MH.sessID;
     var json = {'operand': 'create',
-                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
-                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
-                             'amount': collectApp.amount, 'type': 'collect'}],
+                'pendant': {'loanAppID': loanApp.appID,
+                            'clctAppID': collectApp.appID,
+                            'amount': collectApp.amount, 'type': 'collect'},
                 'userID': MH.userID,
                 'sessID': MH.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.pendant.length).toEqual(1);
-          MH.pendant = res.pendant[0];
+          expect(Object.keys(res.pendant).length).toBeGreaterThan(0);
+          MH.pendant = res.pendant;
           next();
         });
     req.write(JSON.stringify(json));
     req.end();
   });
   it("TEST RESULT: CREATE pendant Moti wants to collect from Gosha", function(next){
-    var apps = [loanApp, collectApp]
-      , count = apps.length
-      ;
-    apps.forEach(function(app, index){
-      setTimeout(function(){
-        applications.get(app.appID, {}, function(e,r){
-          expect(e).toBe(null);
-          if(r.type === 'loan'){
-//console.log(r);
+    applications.get(loanApp.appID, {}, function(e,r){
+      expect(e).toBe(null);
+//console.log(l);
+      expect(r).not.toBe(null);
 // From COLLECT to LOAN: Do nothing with LOAN app.
-            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
-            expect(r.pending).toEqual(0);
-            expect(r.amount).toEqual(r.balance);
-          };
-          if(r.type === 'collect'){
+      expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+      expect(r.pending).toEqual(0);
+      expect(r.amount).toEqual(r.balance);
+      applications.get(collectApp.appID, {}, function(e,r){
 //console.log(r);
-            expect(r.pendants.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
-          };
-        });
-        if(--count === 0){
-          pendants.get(MH.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
+        expect(e).toBe(null);
+        expect(r).not.toBe(null);
+        expect(r.pendants.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
+        pendants.get(MH.pendant.pndID, {}, function(e,p){
+          expect(e).toBe(null);
 //console.log(p);
-            expect(p.status).toEqual('offered');
-            next();
-          });
-        };
-      }, index * 20);
+          expect(p).not.toBe(null);
+          expect(p.status).toEqual('offered');
+          next();
+        });
+      });
     });
   });
 
   it("APPROVE: Gosha approves Moti's pendant", function(next){
     post.path = '/rest/operatePendant';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = GL.sessID;
     var json = {'operand': 'approve',
                 'pndID': MH.pendant.pndID,
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'userID': GL.userID,
+                'sessID': GL.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
@@ -774,34 +769,26 @@ describe("REST API:", function(){
     req.end();
   });
   it("TEST RESULT: Gosha approves Moti's pendant", function(next){
-    var apps = [loanApp, collectApp]
-      , count = apps.length
-      ;
-    apps.forEach(function(app, index){
-      setTimeout(function(){
-        applications.get(app.appID, {}, function(e,r){
-          expect(e).toBe(null);
-          if(r.type === 'loan'){
+    applications.get(loanApp.appID, {}, function(e,r){
+      expect(e).toBe(null);
+      expect(r).not.toBe(null);
 // Approved COLLECT app: update LOAN app with the relevant values
 //console.log(r);
-            expect(r.pendants.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
-            expect(r.pending).toEqual(MH.pendant.amount);
-            expect(r.amount).toEqual(r.pending + r.balance);
-          };
-          if(r.type === 'collect'){
+      expect(r.pendants.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
+      expect(r.pending).toEqual(MH.pendant.amount);
+      expect(r.amount).toEqual(r.pending + r.balance);
+      applications.get(collectApp.appID, {}, function(e,r){
 //console.log(r);
-            expect(r.pendants.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
-          };
-        });
-        if(--count === 0){
-          pendants.get(MH.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
+        expect(r).not.toBe(null);
+        expect(r.pendants.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
+        pendants.get(MH.pendant.pndID, {}, function(e,p){
+          expect(e).toBe(null);
 //console.log(p);
-            expect(p.status).toEqual('approved');
-            next();
-          });
-        };
-      }, index * 20);
+          expect(p).not.toBe(null);
+          expect(p.status).toEqual('approved');
+          next();
+        });
+      });
     });
   });
 
@@ -809,7 +796,7 @@ describe("REST API:", function(){
     post.path = '/rest/operatePendant';
     post.headers['Auth'] = MH.sessID;
     var json = {'operand': 'cancel',
-                'pndID': [MH.pendant.pndID],
+                'pndID': MH.pendant.pndID,
                 'userID': MH.userID,
                 'sessID': MH.sessID
                }
@@ -822,86 +809,144 @@ describe("REST API:", function(){
     req.end();
   });
   it("TEST RESULT: Moti cancels his pendant", function(next){
-    var apps = [loanApp, collectApp]
-      , count = apps.length
-      ;
-    apps.forEach(function(app, index){
-      setTimeout(function(){
-        applications.get(app.appID, {}, function(e,r){
+    applications.get(loanApp.appID, {}, function(e,r){
+      expect(e).toBe(null);
+      expect(r).not.toBe(null);
+//console.log(r);
+      expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+      expect(r.pending).toEqual(0);
+      expect(r.amount).toEqual(r.balance);
+      applications.get(collectApp.appID, {}, function(e,r){
+        expect(e).toBe(null);
+        expect(r).not.toBe(null);
+//console.log(r);
+        expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
+        pendants.get(MH.pendant.pndID, {}, function(e,p){
           expect(e).toBe(null);
-          if(r.type === 'loan'){
-//console.log(r);
-            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
-            expect(r.pending).toEqual(0);
-            expect(r.amount).toEqual(r.balance);
-          };
-          if(r.type === 'collect'){
-//console.log(r);
-            expect(r.pendants.indexOf(MH.pendant.pndID)).toEqual(-1);
-          };
-        });
-        if(--count === 0){
-          pendants.get(MH.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
 //console.log(p);
-            expect(p).toBe(null);
-            delete MH.pendant;
-            next();
-          });
-        };
-      }, index * 20);
+          expect(p).toBe(null);
+          delete MH.pendant;
+          next();
+        });
+      });
     });
   });
 
-  it("CREATE: pendant Gosha offers to Moti", function(next){
+    it("CREATE: pendant Moti wants to collect from Gosha", function(next){
     post.path = '/rest/operatePendant';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = MH.sessID;
     var json = {'operand': 'create',
-                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
-                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
-                             'amount': collectApp.amount, 'type': 'loan'}],
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'pendant': {'loanAppID': loanApp.appID,
+                            'clctAppID': collectApp.appID,
+                            'amount': '1000', 'type': 'collect'},
+                'userID': MH.userID,
+                'sessID': MH.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.pendant.length).toEqual(1);
-          GA.pendant = res.pendant[0];
+          expect(Object.keys(res.pendant).length).toBeGreaterThan(0);
+          MH.pendant = res.pendant;
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("APPROVE - invalid_amount: Gosha approves Moti's pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GL.sessID;
+    var json = {'operand': 'approve',
+                'pndID': MH.pendant.pndID,
+                'userID': GL.userID,
+                'sessID': GL.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(false);
+          expect(res.reason).toEqual('invalid_amount');
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("CANCEL: Moti cancels his pendant", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'cancel',
+                'pndID': MH.pendant.pndID,
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("CREATE - invalid_amount: pendant Gosha offers to Moti", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GL.sessID;
+    var json = {'operand': 'create',
+                'pendant': {'loanAppID': loanApp.appID,
+                             'clctAppID': collectApp.appID,
+                             'amount': '1000', 'type': 'loan'},
+                'userID': GL.userID,
+                'sessID': GL.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(false);
+          expect(res.reason).toEqual('invalid_amount');
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+  it("CREATE: pendant Gosha offers to Moti", function(next){
+    post.path = '/rest/operatePendant';
+    post.headers['Auth'] = GL.sessID;
+    var json = {'operand': 'create',
+                'pendant': {'loanAppID': loanApp.appID,
+                             'clctAppID': collectApp.appID,
+                             'amount': collectApp.amount, 'type': 'loan'},
+                'userID': GL.userID,
+                'sessID': GL.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(Object.keys(res.pendant).length).toBeGreaterThan(0);
+          GL.pendant = res.pendant;
           next();
         });
     req.write(JSON.stringify(json));
     req.end();
   });
   it("TEST RESULT: CREATE: pendant Gosha offers to Moti", function(next){
-    var apps = [loanApp, collectApp]
-      , count = apps.length
-      ;
-    apps.forEach(function(app, index){
-      setTimeout(function(){
-        applications.get(app.appID, {}, function(e,r){
-          expect(e).toBe(null);
-          if(r.type === 'loan'){
+    applications.get(loanApp.appID, {}, function(e,r){
+      expect(e).toBe(null);
 //console.log(r);
+      expect(r).not.toBe(null);
 // From LOAN to COLLECT: the LOAN app is ready for transaction.
-            expect(r.pendants.indexOf(GA.pendant.pndID)).toBeGreaterThan(-1);
-            expect(r.pending).toEqual(collectApp.amount);
-            expect(r.amount).toEqual(r.balance + r.pending);
-          };
-          if(r.type === 'collect'){
+      expect(r.pendants.indexOf(GL.pendant.pndID)).toBeGreaterThan(-1);
+      expect(r.pending).toEqual(collectApp.amount);
+      expect(r.amount).toEqual(r.balance + r.pending);
+      applications.get(collectApp.appID, {}, function(e,r){
+        expect(e).toBe(null);
 //console.log(r);
-            expect(r.pendants.indexOf(GA.pendant.pndID)).toBeGreaterThan(-1);
-          };
-        });
-        if(--count === 0){
-          pendants.get(GA.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
+        expect(r).not.toBe(null);
+        expect(r.pendants.indexOf(GL.pendant.pndID)).toBeGreaterThan(-1);
+        pendants.get(GL.pendant.pndID, {}, function(e,p){
+          expect(e).toBe(null);
 //console.log(p);
-            expect(p.status).toEqual('offered');
-            next();
-          });
-        };
-      }, index * 20);
+          expect(p).not.toBe(null);
+          expect(p.status).toEqual('offered');
+          next();
+        });
+      });
     });
   });
   it("GET: getAssignedPendants related to Moti", function(next){
@@ -930,7 +975,7 @@ describe("REST API:", function(){
     post.path = '/rest/operatePendant';
     post.headers['Auth'] = MH.sessID;
     var json = {'operand': 'decline',
-                'pndID': GA.pendant.pndID, // Greated by Gosha, assigned to Moti
+                'pndID': GL.pendant.pndID, // Greated by Gosha, assigned to Moti
                 'userID': MH.userID,
                 'sessID': MH.sessID
                }
@@ -943,53 +988,47 @@ describe("REST API:", function(){
     req.end();
   });
   it("TEST RESULT: Moti declines Gosha's pendant", function(next){
-    var apps = [loanApp, collectApp]
-      , count = apps.length
-      ;
-    apps.forEach(function(app, index){
-      setTimeout(function(){
-        applications.get(app.appID, {}, function(e,r){
-          expect(e).toBe(null);
-          if(r.type === 'loan'){
+    applications.get(loanApp.appID, {}, function(e,r){
+      expect(e).toBe(null);
 //console.log(r);
+      expect(r).not.toBe(null);
 // From LOAN to COLLECT. Update LOAN app remove all the commitments
-            expect(r.pendants.indexOf(GA.pendant.pndID)).toEqual(-1);
-            expect(r.pending).toEqual(0);
-            expect(r.amount).toEqual(r.balance);
-          };
-          if(r.type === 'collect'){
+      expect(r.pendants.indexOf(GL.pendant.pndID)).toEqual(-1);
+      expect(r.pending).toEqual(0);
+      expect(r.amount).toEqual(r.balance);
+      applications.get(collectApp.appID, {}, function(e,r){
+        expect(e).toBe(null);
 //console.log(r);
-            expect(r.pendants.indexOf(GA.pendant.pndID)).toEqual(-1);
-          };
-        });
-        if(--count === 0){
-          pendants.get(GA.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
+        expect(r).not.toBe(null);
+        expect(r.pendants.indexOf(GL.pendant.pndID)).toEqual(-1);
+        pendants.get(GL.pendant.pndID, {}, function(e,p){
+          expect(e).toBe(null);
 //console.log(p);
-            expect(p.status).toEqual('declined');
-            next();
-          });
-        };
-      }, index * 20);
+          expect(p).not.toBe(null);
+          expect(p.status).toEqual('declined');
+          next();
+        });
+      });
     });
   });
   it("REMOVE the Gosha's pendant", function(next){
     post.path = '/rest/operatePendant';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = GL.sessID;
     var json = {'operand': 'remove',
-                'pndID': GA.pendant.pndID,
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'pndID': GL.pendant.pndID,
+                'userID': GL.userID,
+                'sessID': GL.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.pndID.indexOf(GA.pendant.pndID)).toBeGreaterThan(-1);
+          expect(res.pndID.indexOf(GL.pendant.pndID)).toBeGreaterThan(-1);
 // Check whether the pendant has been removed from the DB.
-          pendants.get(GA.pendant.pndID, {}, function(e,p){
+          pendants.get(GL.pendant.pndID, {}, function(e,p){
             expect(e).toBe(null);
 //console.log(p);
-            delete GA.pendant;
+            expect(p).toBe(null);
+            delete GL.pendant;
             next();
           });
         });
@@ -999,19 +1038,19 @@ describe("REST API:", function(){
 
   it("CREATE: pendant Gosha offers to Moti", function(next){
     post.path = '/rest/operatePendant';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = GL.sessID;
     var json = {'operand': 'create',
-                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
-                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
-                             'amount': collectApp.amount, 'type': 'loan'}],
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'pendant': {'loanAppID': loanApp.appID,
+                            'clctAppID': collectApp.appID,
+                            'amount': collectApp.amount, 'type': 'loan'},
+                'userID': GL.userID,
+                'sessID': GL.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.pendant.length).toEqual(1);
-          GA.pendant = res.pendant[0];
+          expect(Object.keys(res.pendant).length).toBeGreaterThan(0);
+          GL.pendant = res.pendant;
           next();
         });
     req.write(JSON.stringify(json));
@@ -1019,10 +1058,10 @@ describe("REST API:", function(){
   });
   it("GET: getUserPendants related to Gosha", function(next){
     post.path = '/rest/operatePendant';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = GL.sessID;
     var json = {'operand': 'getUserPendants',
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'userID': GL.userID,
+                'sessID': GL.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
@@ -1030,8 +1069,8 @@ describe("REST API:", function(){
           var count = res.pendant.length;
           res.pendant.forEach(function(pnd){
 //console.log(pnd);
-            expect(pnd.userID).toEqual(GA.userID);
-            expect([pnd.loanUserID, pnd.clctUserID].indexOf(GA.userID)).toBeGreaterThan(-1);
+            expect(pnd.userID).toEqual(GL.userID);
+            expect([pnd.loanUserID, pnd.clctUserID].indexOf(GL.userID)).toBeGreaterThan(-1);
             if(--count === 0){next()};
           });
         });
@@ -1040,11 +1079,11 @@ describe("REST API:", function(){
   });
   it("CANCEL: Gosha cancels his pendant", function(next){
     post.path = '/rest/operatePendant';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = GL.sessID;
     var json = {'operand': 'cancel',
-                'pndID': [GA.pendant.pndID],
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'pndID': GL.pendant.pndID,
+                'userID': GL.userID,
+                'sessID': GL.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
@@ -1055,52 +1094,44 @@ describe("REST API:", function(){
     req.end();
   });
   it("TEST RESULT: Gosha cancels his pendant", function(next){
-    var apps = [loanApp, collectApp]
-      , count = apps.length
-      ;
-    apps.forEach(function(app, index){
-      setTimeout(function(){
-        applications.get(app.appID, {}, function(e,r){
+    applications.get(loanApp.appID, {}, function(e,r){
+      expect(e).toBe(null);
+//console.log(r);
+      expect(r).not.toBe(null);
+      expect(r.pendants.indexOf(GL.pendant.pndID)).toEqual(-1);
+      expect(r.pending).toEqual(0);
+      expect(r.amount).toEqual(r.balance);
+      applications.get(collectApp.appID, {}, function(e,r){
+        expect(e).toBe(null);
+//console.log(r);
+        expect(r).not.toBe(null);
+        expect(r.pendants.indexOf(GL.pendant.pndID)).toEqual(-1);
+        pendants.get(GL.pendant.pndID, {}, function(e,p){
           expect(e).toBe(null);
-          if(r.type === 'loan'){
-//console.log(r);
-            expect(r.pendants.indexOf(GA.pendant.pndID)).toEqual(-1);
-            expect(r.pending).toEqual(0);
-            expect(r.amount).toEqual(r.balance);
-          };
-          if(r.type === 'collect'){
-//console.log(r);
-            expect(r.pendants.indexOf(GA.pendant.pndID)).toEqual(-1);
-          };
-        });
-        if(--count === 0){
-          pendants.get(GA.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
 //console.log(p);
-            expect(p).toBe(null);
-            delete GA.pendant;
-            next();
-          });
-        };
-      }, index * 20);
+          expect(p).toBe(null);
+          delete GL.pendant;
+          next();
+        });
+      });
     });
   });
 
   it("CREATE: pendant Gosha offers to Moti", function(next){
     post.path = '/rest/operatePendant';
-    post.headers['Auth'] = GA.sessID;
+    post.headers['Auth'] = GL.sessID;
     var json = {'operand': 'create',
-                'pendant': [{'loanAppID': loanApp.appID,    'loanUserID': loanApp.userID,
-                             'clctAppID': collectApp.appID, 'clctUserID': collectApp.userID,
-                             'amount': collectApp.amount, 'type': 'loan'}],
-                'userID': GA.userID,
-                'sessID': GA.sessID
+                'pendant': {'loanAppID': loanApp.appID,
+                            'clctAppID': collectApp.appID,
+                            'amount': collectApp.amount, 'type': 'loan'},
+                'userID': GL.userID,
+                'sessID': GL.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.pendant.length).toEqual(1);
-          GA.pendant = res.pendant[0];
+          expect(Object.keys(res.pendant).length).toBeGreaterThan(0);
+          GL.pendant = res.pendant;
           next();
         });
     req.write(JSON.stringify(json));
@@ -1110,16 +1141,17 @@ describe("REST API:", function(){
     post.path = '/rest/operatePendant';
     post.headers['Auth'] = MH.sessID;
     var json = {'operand': 'approve',
-                'pndID': GA.pendant.pndID,
+                'pndID': GL.pendant.pndID,
                 'userID': MH.userID,
                 'sessID': MH.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          pendants.get(GA.pendant.pndID, {}, function(e,p){
+          pendants.get(GL.pendant.pndID, {}, function(e,p){
             expect(e).toBe(null);
 //console.log(p);
+            expect(p).not.toBe(null);
             expect(p.amount).toEqual(collectApp.amount);
             expect(p.status).toEqual('approved');
             expect(p.type).toEqual('loan');
@@ -1130,14 +1162,190 @@ describe("REST API:", function(){
     req.end();
   });
 
+  
 
 //
 // Transactions section
 //
+  it("CREATE: Moti creates transaction on Gosha's application", function(next){
+    post.path = '/rest/operateTransaction';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'create',
+                'pndID': GL.pendant.pndID,
+                'payMeans': {'paypal': 'GL.email'},
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          MH.transaction = res.transaction;
+          GL.transaction = res.transaction;
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("TEST RESULT: Moti creates transaction on Gosha's application", function(next){
+    applications.get(loanApp.appID, {}, function(e,r){
+      expect(e).toBe(null);
+//console.log(r);
+      expect(r).not.toBe(null);
+      expect(r.pendants.indexOf(GL.pendant.pndID)).toEqual(-1);
+      expect(r.pending).toEqual(collectApp.amount);
+      expect(r.amount).toEqual(r.balance + r.pending); // pending is waiting for approval
+      applications.get(collectApp.appID, {}, function(e,r){
+        expect(e).toBe(null);
+//console.log(r);
+        expect(r).not.toBe(null);
+        expect(r.pendants.indexOf(GL.pendant.pndID)).toEqual(-1);
+        expect(r.balance).toEqual(0); // balance is moving to transaction.
+        pendants.get(GL.pendant.pndID, {}, function(e,p){
+          expect(e).toBe(null);
+//console.log(p);
+          expect(p).toBe(null); // pendant has been deleted from the DB.
+          delete GL.pendant;
+          next();
+        });
+      });
+    });
+  });
+
+  it("GetActiveTransaction: Get Active Transactions - Moti", function(next){
+    post.path = '/rest/operateTransaction';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'getActiveTransactions',
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.transID.indexOf(MH.transaction.transID)).toBeGreaterThan(-1);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+  it("sendMessage: send message from Gosha", function(next){
+    post.path = '/rest/operateTransaction';
+    post.headers['Auth'] = GL.sessID;
+    var json = {'operand': 'sendMessage',
+                'transID': GL.transaction.transID,
+                'text': 'This is a test message. Please approve the transaction',
+                'userID': GL.userID,
+                'sessID': GL.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("sendMessage: Replay from Moti", function(next){
+    post.path = '/rest/operateTransaction';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'sendMessage',
+                'transID': MH.transaction.transID,
+                'text': 'Approved',
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("APPROVE: Moti approves the transaction", function(next){
+    post.path = '/rest/operateTransaction';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'approve',
+                'transID': MH.transaction.transID,
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("GetUserTransaction: Get User Transactions - Gosha", function(next){
+    post.path = '/rest/operateTransaction';
+    post.headers['Auth'] = GL.sessID;
+    var json = {'operand': 'getUserTransactions',
+                'userID': GL.userID,
+                'sessID': GL.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res.transaction.find(function(el){return el.transID === GL.transaction.transID}));
+          expect(res.result).toBe(true);
+          expect(res.transID.indexOf(GL.transaction.transID)).toBeGreaterThan(-1);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("TEST RESULT: Moti creates transaction on Gosha's application", function(next){
+    setTimeout(function(){
+      // Loan application is still active.
+      applications.get(loanApp.appID, {}, function(e,r){
+        expect(e).toBe(null);
+//console.log(r);
+        expect(r).not.toBe(null);
+        expect(r.status).toBe('active');
+        expect(r.transactions.find(function(el){return el.transID === GL.transaction.transID}).status).toEqual('completed');
+        expect(r.pending).toEqual(0);
+        expect(r.asset).toEqual(collectApp.amount);
+        expect(r.amount).toEqual(r.balance + r.asset);
+        // Collect appication was moved to the archive
+        applications.get(collectApp.appID, {}, function(e,r){
+          expect(e).toBe(null);
+//console.log(r);
+          expect(r).toBe(null); // moved to archive
+          apparchive.get(collectApp.appID, {}, function(e,r){
+            expect(e).toBe(null);
+//console.log(r);
+            expect(r.status).toBe('completed');
+            expect(r.transactions.find(function(el){return el.transID === MH.transaction.transID}).status).toEqual('completed');
+            // Transaction was approved and moved to the archive
+            transarchive.get(GL.transaction.transID, {}, function(e,r){
+              expect(e).toBe(null);
+//console.log(r);
+              expect(r).not.toBe(null);
+              expect(r.amount).toEqual(collectApp.amount);
+              expect(r.status).toEqual('completed');
+              transactions.get(GL.transaction.transID, {}, function(e,r){
+                expect(e).toBe(null);
+//console.log(r);
+                expect(r).toBe(null); // moved to archive
+                next();
+              });
+            });
+          });
+        });
+      });  
+    }, 500); // Timeout - let API to finish its job
+  });
 
 //
 // Removing test objects from the system
 //
+  it("Remove transactions from archive", function(next){
+    transarchive.remove(GL.transaction.transID, function(e,r){
+      expect(e).toBe(null);
+      expect(r.result).toEqual({ ok: 1, n: 1 });
+      next();
+    })
+  });
   it("Remove loan application from the system", function(next){
     applications.remove(loanApp.appID, function(e,r){
       expect(e).toBe(null);
@@ -1145,8 +1353,8 @@ describe("REST API:", function(){
       next();
     })
   });
-  it("Remove collect application from the system", function(next){
-    applications.remove(collectApp.appID, function(e,r){
+  it("Remove collect application from archive", function(next){
+    apparchive.remove(collectApp.appID, function(e,r){
       expect(e).toBe(null);
       expect(r.result).toEqual({ ok: 1, n: 1 });
       next();
@@ -1235,7 +1443,7 @@ describe("REST API:", function(){
             }) //session.remove
           }) //users.remove
         })//ldap.remove
-      }, index * 100) //setTimeout
+      }, index * 50) //setTimeout
     });//forEach
   });
 

@@ -8,6 +8,7 @@
     "bower": "*",
     "underscore": "*",
     "mongodb": "*",
+    "gridfs": "*",
     "ldap-client": "*",
     "nodemailer": "*",
     "uglify-js": "*",
