@@ -4,8 +4,10 @@
 *   - Create 4 users, one is a GlobalAdmin, second one is BusinessAdmin
 *   - Create a plan
 * o Test bed:
+*   - Create 1 LOAN-TO-ASSET apps direct to DB
+*   - Create ASSET applications from them (BATCH).
 *   - Greate 1 LOAN application
-*   - Create 2 COLLECT applications
+*   - Create 2 COLLECT applications from the ASSETs
 
 ****** Pendants ******
 *   - Create an offer (pendant) from COLLECT to LOAN
@@ -65,6 +67,8 @@ var session = require('models')('sessions')
   , pendants = require('models')('pendants')
   , transactions = require('models')('transactions')
   , transarchive = require('models')('transarchive')
+  , batch = require('batch')
+  , tt = require('testools')
   , MongoClient = require('mongodb').MongoClient
   , mongo = require('config').mongo
   , DB = {};
@@ -99,7 +103,7 @@ var port = require('config').server.port
 
 
 // Test values
-
+/*** Users ***/
 var KP = {
       lang: 'rus',
       email: 'kuku@v30.amdocs.com',
@@ -201,7 +205,8 @@ var KP = {
   , MH = {
       lang: 'heb',
       email: 'moti@v30.amdocs.com',
-      password: '1234'
+      password: '1234',
+      balance: 100 // Rest amount leaved in assets 
     }
 
   , MotiHammer = {
@@ -234,12 +239,13 @@ var KP = {
   , testUsers = []
   , testApps = []
   , testTrans = []
+  , testPlans = []
 ;
 
 
-function getTime(num){
+function getMonthTime(num){
   var d = new Date()
-  return new Date(d.setMonth(num)).getTime();
+  return new Date(d.setMonth(d.getMonth() + num)).getTime();
 }
 
 var d = new Date()
@@ -249,7 +255,7 @@ var d = new Date()
   
   , loanApp = {
       type: 'loan',
-      amount: 300
+      amount: 600
     }
   , clctApp = {
       type: 'collect',
@@ -257,19 +263,31 @@ var d = new Date()
     }
   , restApp = {
       type: 'collect',
-      amount: 100
+      amount: MH.balance
     }
 
   , planLCT = { // Permanent
       description: {'eng': 'Loan - Collect Test','rus': 'Loan - Collect Test','heb': 'Loan - Collect Test'}, // Langs and descriptions can be edited via GUI
       duration: 3, // months
       interest: 30, // procents
-      fromDate: getTime(month - 2), // start of active period
+      fromDate: getMonthTime(-2), // start of active period
       tillDate: 'permanent' // end of active period or 'permanent'
     }
-    
-  , loan
+  , planInit = { // Permanent
+      description: {'eng': 'Initial - for Beginners Test','rus': 'Initial - for Beginners Test','heb': 'Initial - for Beginners Test'},
+      duration: 1, // months
+      interest: 10, // procents
+      fromDate: getMonthTime(-3), // start of active period
+      tillDate: 'permanent' // end of active period or 'permanent'
+    }
   ;
+
+// LoanToAsset applications.
+  var LoanToAssetApps = [
+    {},{}
+  
+  ];
+
 //
 // Creating initial test components
 //
@@ -287,6 +305,8 @@ describe("REST API:", function(){
       apparchive.setDB(DB);
       transactions.setDB(DB);
       transarchive.setDB(DB);
+      batch.setDB(DB);
+      tt.setDB(DB);
       next();
     });
   });
@@ -501,7 +521,7 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-  it("CREATE one plan: Create one plan (object) using 'create'", function(next){
+  it("CREATE Loan-Collect-Test plan: Create plan (object) using 'create'", function(next){
     var plan = planLCT;
     post.path = '/rest/operatePlan';
     post.headers['Auth'] = KP.sessID;
@@ -512,7 +532,31 @@ describe("REST API:", function(){
                }
       , req = request(post, function(res){
           plan.planID = res.plan.planID;
+          testPlans.push(plan.planID);
           planLCT = plan;
+          expect(res.result).toBe(true);
+          expect(res.plan.duration).toEqual(plan.duration);
+          expect(res.plan.interest).toEqual(plan.interest);
+          expect(res.plan.fromDate).toEqual(plan.fromDate);
+          expect(res.plan.tillDate).toEqual(plan.tillDate);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+  it("CREATE Initial-Test plan: Create plan (object) using 'create'", function(next){
+    var plan = planInit;
+    post.path = '/rest/operatePlan';
+    post.headers['Auth'] = KP.sessID;
+    var json = {'plan': plan,
+                'operand': 'create',
+                'userID': KP.userID,
+                'sessID': KP.sessID
+               }
+      , req = request(post, function(res){
+          plan.planID = res.plan.planID;
+          testPlans.push(plan.planID);
+          planInit = plan;
           expect(res.result).toBe(true);
           expect(res.plan.duration).toEqual(plan.duration);
           expect(res.plan.interest).toEqual(plan.interest);
@@ -529,39 +573,77 @@ describe("REST API:", function(){
 //
 
 // Applications
-  it("CREATE loan application: from loanApp object (Gena Alter)", function(next){
-    var plan = planLCT;
+  it("TESTOOL:createLoanApplication: create active loan application from loanApp object (Moti Hammer)", function(next){
+    var plan = planLCT
+      , loan = {userID: MH.userID, // Mandatory value
+                plan: {planID: plan.planID, interest: plan.interest, duration: plan.duration}, // Mandatory value
+                balance: loanApp.amount / 4 - MH.balance, // Optional value
+                weight: 3, // Optional value
+                amount: loanApp.amount / 4 // Mandatory value
+               }
+      ;
+    tt.createLoanApplication(loan, function(app){
+//console.log(app);
+      testApps.push(app.appID);
+      next();
+    })
+  });
+  it("TESTOOL:createLoanApplication: create completed loan application from loanApp object (Moti Hammer)", function(next){
+    var plan = planLCT
+      , loan = {userID: MH.userID, // Mandatory value
+                plan: {planID: plan.planID, interest: plan.interest, duration: plan.duration}, // Mandatory value
+                // balance: // No balance means asset === amount and the application has 'completed' status
+                weight: 5, // Optional value
+                amount: loanApp.amount / 4 // Mandatory value
+               }
+      ;
+    tt.createLoanApplication(loan, function(app){
+//console.log(app);
+      testApps.push(app.appID);
+      next();
+    })
+  });
+  it("BATCH: create assets from completed and valid loan applications", function(next){
+    batch.createAssetApplication(function(e, res){
+      expect(e).toBe(null);
+//console.log(res);
+      var count = res.assetApplications.length;
+      res.assetApplications.forEach(function(app){
+        testApps.push(app.appID);
+        if(--count === 0){next()};
+      }); // forEach
+    }); // batch.createAssetApplication
+  });
+
+  it("GetUserAssets: receive list of user assets (Moti Hammer)", function(next){
     post.path = '/rest/operateApplication';
-    post.headers['Auth'] = GL.sessID;
-    var json = {'operand': 'create',
-                'planID': plan.planID,
-                'type':   loanApp.type,
-                'amount': loanApp.amount,
-                'userID': GL.userID,
-                'sessID': GL.sessID
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'getUserAssets',
+                'userID': MH.userID,
+                'sessID': MH.sessID
                }
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          expect(res.sessID).toEqual(GL.sessID);
-          expect(res.application.userID).toEqual(GL.userID);
-          expect(res.application.amount).toEqual(loanApp.amount);
-          expect(res.application.type).toEqual(loanApp.type);
-          expect(res.application.plan.planID).toEqual(planLCT.planID);
-          
-          loanApp = res.application;
-          testApps.push(res.application.appID);
+          expect(res.sessID).toEqual(MH.sessID);
+          expect(res.application.length).toEqual(2); // There are 2 assets created in above
+          MH.asset = res.application;
           next();
         });
     req.write(JSON.stringify(json));
     req.end();
   });
-  it("CREATE collect application: from clctApp object (Moti Hammer)", function(next){
+
+
+  it("CREATE collect application: from the assets (Moti Hammer)", function(next){
     post.path = '/rest/operateApplication';
     post.headers['Auth'] = MH.sessID;
-    var json = {'operand': 'create',
-                'type':   clctApp.type,
-                'amount': clctApp.amount,
+    var amount = MH.asset.reduce(function(sum, app){return sum + app.amount}, -MH.balance)
+      , json = {'operand': 'createCollectApplication',
+                'amount': amount,
+                'assets': [ {appID: MH.asset[0].appID, amount: MH.asset[0].amount - MH.balance}, // active asset
+                            {appID: MH.asset[1].appID, amount: MH.asset[1].amount}        // completed asset
+                          ],
                 'userID': MH.userID,
                 'sessID': MH.sessID
                }
@@ -570,10 +652,69 @@ describe("REST API:", function(){
           expect(res.result).toBe(true);
           expect(res.sessID).toEqual(MH.sessID);
           expect(res.application.userID).toEqual(MH.userID);
-          expect(res.application.amount).toEqual(clctApp.amount);
-          expect(res.application.type).toEqual(clctApp.type);
+          expect(res.application.amount).toEqual(amount);
+          expect(res.application.type).toEqual('collect');
           
           clctApp = res.application;
+          testApps.push(res.application.appID);
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+  it("TEST RESULT: create collect application from the assets (Moti Hammer)", function(next){
+    setTimeout(function(){
+      applications.getBy({userID: MH.userID, type: 'asset', appID: {$in: MH.asset.map(function(el){return el.appID})}}, {}, function(e,r){
+        expect(e).toBe(null);
+        expect(r).not.toBe(null);
+//console.log(r);
+        expect(r.length).toEqual(1); // only one active asset is remained
+        expect(r[0].status).toEqual('active');
+        expect(r[0].balance).toEqual(MH.balance);
+        expect(r[0].applications[0].appID).toEqual(clctApp.appID);
+        apparchive.getBy({userID: MH.userID, type: 'asset', appID: {$in: MH.asset.map(function(el){return el.appID})}}, {}, function(e,r){
+          expect(e).toBe(null);
+          expect(r).not.toBe(null);
+//console.log(r);
+          expect(r.length).toEqual(1); // only one completed asset is archived
+          expect(r[0].applications[0].appID).toEqual(clctApp.appID);
+          expect(r[0].status).toEqual('completed');
+          applications.get(clctApp.appID, {}, function(e,r){
+            expect(e).toBe(null);
+//console.log(r);
+            expect(r).not.toBe(null); // collect application has been created
+            expect(r.userID).toEqual(MH.userID);
+            expect(r.status).toEqual('active');
+            expect(r.type).toEqual('collect');
+            expect(r.applications.map(function(el){return el.appID})).toContain(MH.asset[0].appID);
+            expect(r.applications.map(function(el){return el.appID})).toContain(MH.asset[1].appID);
+            next();
+          });
+        });
+      });
+    }, 500); // Timeout - let API to finish its job
+  });
+
+  
+  it("CREATE loan application: from loanApp object (Gosha Lummer)", function(next){
+    var plan = planLCT;
+    post.path = '/rest/operateApplication';
+    post.headers['Auth'] = GL.sessID;
+    var json = {'operand': 'createLoanApplication',
+                'planID': plan.planID,
+                'amount': loanApp.amount,
+                'userID': GL.userID,
+                'sessID': GL.sessID
+               }
+      , req = request(post, function(res){
+          expect(res.result).toBe(true);
+          expect(res.sessID).toEqual(GL.sessID);
+          expect(res.application.userID).toEqual(GL.userID);
+          expect(res.application.amount).toEqual(loanApp.amount);
+          expect(res.application.plan.planID).toEqual(planLCT.planID);
+          
+          loanApp = res.application;
           testApps.push(res.application.appID);
           next();
         });
@@ -705,13 +846,15 @@ describe("REST API:", function(){
           expect(res.result).toBe(true);
           expect(res.pndID.indexOf(MH.pendant.pndID)).toBeGreaterThan(-1);
 // Check whether the pendant has been removed from the DB.
-          pendants.get(MH.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
-//console.log(p);
-            expect(p).toBe(null);
-            next();
-            delete MH.pendant;
-          });
+          setTimeout(function(){
+            pendants.get(MH.pendant.pndID, {}, function(e,p){
+              expect(e).toBe(null);
+  //console.log(p);
+              expect(p).toBe(null);
+              next();
+              delete MH.pendant;
+            });            
+          }, 100); // Timeout - let API to finish its job
         });
     req.write(JSON.stringify(json));
     req.end();
@@ -932,15 +1075,20 @@ describe("REST API:", function(){
                 'sessID': GL.sessID
                }
       , req = request(post, function(res){
-//console.log(res);
-          expect(res.result).toBe(true);
-          expect(Object.keys(res.pendant).length).toBeGreaterThan(0);
-          GL.pendant = res.pendant;
-          next();
+          if(res && res.result){
+            expect(Object.keys(res.pendant).length).toBeGreaterThan(0);
+            GL.pendant = res.pendant;
+            next();
+          } else {
+console.log(res);
+            expect(res.result).toBe(true);
+            next();
+          }
         });
     req.write(JSON.stringify(json));
     req.end();
   });
+
   it("TEST RESULT: CREATE: pendant Gosha offers to Moti", function(next){
     setTimeout(function(){
       applications.get(loanApp.appID, {}, function(e,r){
@@ -1044,13 +1192,15 @@ describe("REST API:", function(){
           expect(res.result).toBe(true);
           expect(res.pndID.indexOf(GL.pendant.pndID)).toBeGreaterThan(-1);
 // Check whether the pendant has been removed from the DB.
-          pendants.get(GL.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
-//console.log(p);
-            expect(p).toBe(null);
-            delete GL.pendant;
-            next();
-          });
+          setTimeout(function(){
+            pendants.get(GL.pendant.pndID, {}, function(e,p){
+              expect(e).toBe(null);
+  //console.log(p);
+              expect(p).toBe(null);
+              delete GL.pendant;
+              next();
+            });            
+          }, 100); // Timeout - let API to finish its job
         });
     req.write(JSON.stringify(json));
     req.end();
@@ -1170,21 +1320,22 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          pendants.get(GL.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
-//console.log(p);
-            expect(p).not.toBe(null);
-            expect(p.amount).toEqual(clctApp.amount);
-            expect(p.status).toEqual('approved');
-            expect(p.type).toEqual('loan');
-            next();
-          });
+          setTimeout(function(){            
+            pendants.get(GL.pendant.pndID, {}, function(e,p){
+              expect(e).toBe(null);
+  //console.log(p);
+              expect(p).not.toBe(null);
+              expect(p.amount).toEqual(clctApp.amount);
+              expect(p.status).toEqual('approved');
+              expect(p.type).toEqual('loan');
+              next();
+            });
+          }, 100); // Timeout - let API to finish its job
         });
     req.write(JSON.stringify(json));
     req.end();
   });
 
-  
 
 //
 // Transactions section
@@ -1194,7 +1345,7 @@ describe("REST API:", function(){
     post.headers['Auth'] = MH.sessID;
     var json = {'operand': 'create',
                 'pndID': GL.pendant.pndID,
-                'payMeans': {'paypal': 'MH.email'},
+                'payMeans': {'paypal': MH.email},
                 'userID': MH.userID,
                 'sessID': MH.sessID
                }
@@ -1235,7 +1386,6 @@ describe("REST API:", function(){
       });
     }, 500); // Timeout - let API to finish its job
   });
-
   it("GetActiveTransaction: Get Active Transactions - Moti", function(next){
     post.path = '/rest/operateTransaction';
     post.headers['Auth'] = MH.sessID;
@@ -1252,7 +1402,6 @@ describe("REST API:", function(){
     req.write(JSON.stringify(json));
     req.end();
   });
-
   it("sendMessage: send message from Gosha", function(next){
     post.path = '/rest/operateTransaction';
     post.headers['Auth'] = GL.sessID;
@@ -1361,15 +1510,36 @@ describe("REST API:", function(){
     }, 500); // Timeout - let API to finish its job
   });
 
+  
+  it("GetUserAssets: receive list of residual user assets (Moti Hammer)", function(next){
+    post.path = '/rest/operateApplication';
+    post.headers['Auth'] = MH.sessID;
+    var json = {'operand': 'getUserAssets',
+                'userID': MH.userID,
+                'sessID': MH.sessID
+               }
+      , req = request(post, function(res){
+//console.log(res);
+          expect(res.result).toBe(true);
+          expect(res.sessID).toEqual(MH.sessID);
+          expect(res.application.length).toEqual(1); // There is only one asset, the other was archived
+          MH.asset = res.application;
+          next();
+        });
+    req.write(JSON.stringify(json));
+    req.end();
+  });
+
+
 //  
 // The rest part of the loan application (loanApp)
 //
   it("CREATE collect application: from restApp object (Moti Hammer)", function(next){
     post.path = '/rest/operateApplication';
     post.headers['Auth'] = MH.sessID;
-    var json = {'operand': 'create',
-                'type':   restApp.type,
-                'amount': restApp.amount,
+    var json = {'operand': 'createCollectApplication',
+                'amount': MH.asset[0].balance,
+                'assets': [ {appID: MH.asset[0].appID, amount: MH.asset[0].balance}], // active asset
                 'userID': MH.userID,
                 'sessID': MH.sessID
                }
@@ -1394,7 +1564,7 @@ describe("REST API:", function(){
     var json = {'operand': 'create',
                 'pendant': {'loanAppID': loanApp.appID,
                             'clctAppID': restApp.appID,
-                            'amount': restApp.amount, 'type': 'loan'},
+                            'amount': restApp.balance, 'type': 'loan'},
                 'userID': GL.userID,
                 'sessID': GL.sessID
                }
@@ -1419,15 +1589,17 @@ describe("REST API:", function(){
       , req = request(post, function(res){
 //console.log(res);
           expect(res.result).toBe(true);
-          pendants.get(GL.pendant.pndID, {}, function(e,p){
-            expect(e).toBe(null);
-//console.log(p);
-            expect(p).not.toBe(null);
-            expect(p.amount).toEqual(restApp.amount);
-            expect(p.status).toEqual('approved');
-            expect(p.type).toEqual('loan');
-            next();
-          });
+          setTimeout(function(){
+            pendants.get(GL.pendant.pndID, {}, function(e,p){
+              expect(e).toBe(null);
+  //console.log(p);
+              expect(p).not.toBe(null);
+              expect(p.amount).toEqual(restApp.amount);
+              expect(p.status).toEqual('approved');
+              expect(p.type).toEqual('loan');
+              next();
+            });            
+          }, 100); // Timeout - let API to finish its job
         });
     req.write(JSON.stringify(json));
     req.end();
@@ -1501,14 +1673,14 @@ describe("REST API:", function(){
         expect(e).toBe(null);
 //console.log(r);
         expect(r).not.toBe(null);
-        expect(r.asset).toEqual(r.amount);
-        expect(r.status).toBe('completed');
         expect(r.transactions.find(function(el){return el.transID === GL.transaction.transID}).status).toEqual('completed');
         expect(r.pending).toEqual(0);
-        expect(r.balance).toEqual(0);
+//        expect(r.asset).toEqual(r.amount);
+//        expect(r.status).toBe('completed');
+//        expect(r.balance).toEqual(0);
         apparchive.get(loanApp.appID, {}, function(e,r){
           expect(e).toBe(null);
-          expect(r).toBe(null);
+          expect(r).toBe(null); // still in the 'applications' collection
           // Collect appication was moved to the archive
           applications.get(restApp.appID, {}, function(e,r){
             expect(e).toBe(null);
@@ -1541,53 +1713,58 @@ describe("REST API:", function(){
   });
 
   
-  
 //
 // Removing test objects from the system
 //
   it("Remove transactions from the system", function(next){
     transactions.remove(testTrans, function(e,r){
       expect(e).toBe(null);
-      expect(r.result).toEqual({ ok: 1, n: 0 });
+      expect(r.result).toEqual({ ok: 1, n: 0 }); // All the transactions were approved
       next();
     })
   });
   it("Remove transactions from archive", function(next){
     transarchive.remove(testTrans, function(e,r){
       expect(e).toBe(null);
-      expect(r.result).toEqual({ ok: 1, n: 1 });
+      expect(r.result).toEqual({ ok: 1, n: 2 }); // There were 2 transactions
       next();
     })
   });
   it("Remove loan application from the system", function(next){
     applications.remove(testApps, function(e,r){
       expect(e).toBe(null);
-      expect(r.result).toEqual({ ok: 1, n: 1 });
+      expect(r.result).toEqual({ ok: 1, n: 1 }); // It is still 1 active LOAN applicaiton
       next();
     })
   });
-  it("Remove collect application from archive", function(next){
+  it("Remove applications from archive", function(next){
     apparchive.remove(testApps, function(e,r){
       expect(e).toBe(null);
-      expect(r.result).toEqual({ ok: 1, n: 1 });
+      expect(r.result).toEqual({ ok: 1, n: 6 }); // 2 test-LOAN, 2 ASSET and 2 COLLECT
       next();
     })
   });
+
   it("Remove plan from the system", function(next){
-  // Check the API. If is possible to remove a plan already used by any application.
-    var plan = planLCT;
+  // TODO: Check the API.
+  // If it is possible to remove a plan which is already used by any application.
     post.path = '/rest/operatePlan?operand=remove';
     post.headers['Auth'] = KP.sessID   
-    var json = {'planID': plan.planID,
-                'userID': KP.userID,
-                'sessID': KP.sessID
-               }
-      , req = request(post, function(res){
+    var count = testPlans.length;
+    testPlans.forEach(function(planID, index){
+      setTimeout(function(){
+        var json = {'planID': planID,
+                    'userID': KP.userID,
+                    'sessID': KP.sessID
+                   }
+          , req = request(post, function(res){
 //console.log(res);
-      next();
-    });
-    req.write(JSON.stringify(json));
-    req.end();
+          if(--count === 0){next()};
+        });
+        req.write(JSON.stringify(json));
+        req.end();      
+      }, index * 100) //setTimeout
+    }); // forEach
   });
  
 /* 15

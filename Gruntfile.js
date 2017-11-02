@@ -13,10 +13,12 @@ var sources = {
   translate:   path.join(app, 'node_modules/translate'),
   apis:        path.join(app, 'node_modules/apis'),
   globals:     path.join(app, 'node_modules/config'),
+  batch:       path.join(app, 'node_modules/batch'),
   statics:     path.join(app, 'src/statics'),
   controllers: path.join(app, 'src/controllers'),
   services:    path.join(app, 'src/services'),
-  tests:       path.join(app, 'src/tests')
+  tests:       path.join(app, 'src/tests'),
+  testools:    path.join(app, 'tests/node_modules/testools')
 }
 
 var jsons = {
@@ -30,16 +32,44 @@ var jsons = {
 
 var tasks = {
     concat: {
+      // Back End
       translate: {
         src: ['dictionary.js', 'translate.js']
              .map((file)=>{return path.join(sources.translate, file)}),
         dest: path.join(sources.translate, index)
       },
       apis: {
-        src: ['globals.js', 'helpers.js', '*.api.js']
+        src: ['title.js', 'globals.js', 'helpers.js', '*.api.js']
              .map((file)=>{return path.join(sources.apis, file)}),
         dest: path.join(sources.apis, index)
       },
+      batch: {
+        src:  ['title.js']
+              .map((file)=>{return path.join(sources.batch, file)})
+              .concat(
+                ['globals.js'] // from APIs 
+                .map((file)=>{return path.join(sources.apis,file)})
+              )
+              .concat(
+                ['helpers.js', '*.batch.js'] // from Batch
+                .map((file)=>{return path.join(sources.batch, file)})
+              ),
+        dest: path.join(sources.batch, index)
+      },
+      testools: {
+        src:  ['title.js']
+              .map((file)=>{return path.join(sources.testools, file)})
+              .concat(
+                ['globals.js'] // from APIs 
+                .map((file)=>{return path.join(sources.apis,file)})
+              )
+              .concat(
+                ['helpers.js', '*.tt.js'] // from Batch
+                .map((file)=>{return path.join(sources.testools, file)})
+              ),
+        dest: path.join(sources.testools, index)
+      },
+      // Front End
       controllers: {
         src: ['HeadCtrl.js', '*.Ctrl.js']
              .map((file)=>{return path.join(sources.controllers, file)}),
