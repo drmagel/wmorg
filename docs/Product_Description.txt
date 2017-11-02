@@ -270,13 +270,15 @@ Lows:
   o The least loan amount is 200
   o The 'registration gift' Collect amount is 50
   o The least 'frozen' time is one month. And the interes is 10% a month.
-  o The refistration profit is 70.
+  o The registration profit is 70.
   o The algorithm:
     * The Collect amount is created just after the registration, but it is graid out.
-    * It become be available the day just after the loan offer is created. On this point it is possible to send request to loaner.
-    * If the Collect request has been applyed, it is still invisible for other loaners for choosing.
+    * It become be available the day just after the loan offer is created. On this point it is possible to choose it.
+    * Only loaner can choose the Collect appilication but not wise versa. That means loaner is ready to pay.
+    * If the Collect request has been activated, it is still has a 0 weight and located at the end of the list (only in the project begiinig, in order to start it)
+      In the future it will be invisible to other loaners for choosing till the loan offer was applied and confirmed at least for the same amount.
       It become be visible just after the loan offer was applied and confirmed at least for the same amount.
-    * The Collect request gets the most weight
+    * The Collect request receives the most weight (9)
       and goes to the top of the list just after the loan offer has been applied in order to make sure it will be paid ASAP.
 
 - Interest lows (Plans):
